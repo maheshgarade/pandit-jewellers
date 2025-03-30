@@ -1,0 +1,31 @@
+Gold Rate set
+
+
+Customer Details
+Customer Name
+Customer Phone
+Customer Address
+
+Item Details
+Barcode number
+Gross wt
+Other wt
+Net wt
+Purity
+Making %
+
+Cost Calculation
+Gold cost * net wt = Gold Cost
+making cost 
+Total Bill
+Gst 3%
+
+15.500
+
+Weight 15.500
+Purity 91.6 - 22k
+making charges 8%
+Stone Charges
+
+200000
+
