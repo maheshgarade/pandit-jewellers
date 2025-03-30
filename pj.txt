@@ -29,3 +29,29 @@ Stone Charges
 
 200000
 
+
+
+
+I need to create mobile MUI colorful calculator which will take  inputs from user like item weight, purity which will be a drop down with three fields 24K - 99.9%, 22K - 91.6% & 18K - 75%, gold rate for selected purity, making charges in percentage, stone charges and give a beautiful payment details table like a bill receipt which will have calculations as 
+Net Gold wegiht 
+Gold Price (Net weight which will be item wt - stone wt =  net wt)
+Making Charges (8%) 
+Stone Charges
+GST
+Total
+
+
+import { cn } from "../../lib/utils";
+
+import { cn } from "@/lib/utils";
+
+
+embla-carousel-react
+
+
+recharts
+vaul
+react-hook-form
+input-otp
+react-resizable-panels
+

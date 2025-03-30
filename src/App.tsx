@@ -18,8 +18,8 @@ import { Routes, Route, Link, useLocation } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useTheme } from "@mui/material/styles";
 import Calculators from "./features/calculators/Calculators";
-import ValueCalculator from "./features/calculators/value-calculator/ValueCalculator";
 import BreadcrumbsComponent from "./components/BreadcrumbsComponent";
+import PriceCalculator from "./components/PriceCalculator";
 
 // Menu Items
 const menuItems = [
@@ -99,7 +99,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<div>Dashboard</div>} />
             <Route path="/calculators" element={<Calculators />} />
-            <Route path="/value-calculator" element={<ValueCalculator />} />
+            <Route path="/price-calculator" element={<PriceCalculator />} />
           </Routes>
         </Suspense>
       </Box>

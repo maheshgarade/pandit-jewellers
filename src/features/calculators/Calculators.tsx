@@ -5,8 +5,8 @@ import { Box, Typography } from "@mui/material";
 const calculators = [
   {
     id: 1,
-    name: "Value Calculator",
-    path: "/value-calculator",
+    name: "Price Calculator",
+    path: "/price-calculator",
     image: "/icons/calculator.png",
   },
 ];
