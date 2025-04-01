@@ -127,8 +127,8 @@ const PriceCalculator = () => {
                   htmlFor="itemWeight"
                   className="text-purple-800 flex items-center font-medium"
                 >
-                  <Weight className="h-4 w-4 mr-1 text-purple-600" /> Item
-                  Weight (g)
+                  <Weight className="h-4 w-4 mr-1 text-purple-600" /> Net Weight
+                  (g)
                 </Label>
                 <Input
                   id="itemWeight"
@@ -144,51 +144,29 @@ const PriceCalculator = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label
-                  htmlFor="stoneWeight"
-                  className="text-purple-800 flex items-center font-medium"
-                >
-                  <Weight className="h-4 w-4 mr-1 text-purple-600" /> Stone
-                  Weight (g)
+                <Label htmlFor="purity" className="text-purple-800 font-medium">
+                  Gold Purity
                 </Label>
-                <Input
-                  id="stoneWeight"
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  className="border-purple-200 focus:border-purple-500 focus:ring-purple-500 bg-white/80"
-                  value={stoneWeight}
-                  onChange={(e) =>
-                    handleInputChange(setStoneWeight, e.target.value)
-                  }
-                  placeholder="0"
-                />
+                <Select
+                  value={purity}
+                  onValueChange={(value: string) => setPurity(value)}
+                >
+                  <SelectTrigger className="border-purple-200 focus:border-purple-500 focus:ring-purple-500 bg-white/80">
+                    <SelectValue placeholder="Select purity" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-purple-200">
+                    <SelectItem value="24K" className="hover:bg-purple-50">
+                      24K - 99.9%
+                    </SelectItem>
+                    <SelectItem value="22K" className="hover:bg-purple-50">
+                      22K - 91.6%
+                    </SelectItem>
+                    <SelectItem value="18K" className="hover:bg-purple-50">
+                      18K - 75.0%
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="purity" className="text-purple-800 font-medium">
-                Gold Purity
-              </Label>
-              <Select
-                value={purity}
-                onValueChange={(value: string) => setPurity(value)}
-              >
-                <SelectTrigger className="border-purple-200 focus:border-purple-500 focus:ring-purple-500 bg-white/80">
-                  <SelectValue placeholder="Select purity" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-purple-200">
-                  <SelectItem value="24K" className="hover:bg-purple-50">
-                    24K - 99.9%
-                  </SelectItem>
-                  <SelectItem value="22K" className="hover:bg-purple-50">
-                    22K - 91.6%
-                  </SelectItem>
-                  <SelectItem value="18K" className="hover:bg-purple-50">
-                    18K - 75.0%
-                  </SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-2">
@@ -232,7 +210,7 @@ const PriceCalculator = () => {
                   htmlFor="stoneCharges"
                   className="text-purple-800 font-medium"
                 >
-                  Stone Charges
+                  Other Charges
                 </Label>
                 <Input
                   id="stoneCharges"

@@ -24,7 +24,7 @@ const Receipt: React.FC<ReceiptProps> = ({ calculations }) => {
       <div className="relative z-10">
         <div className="text-center mb-5">
           <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent">
-            Gold Jewelry Bill
+            Bill Summary
           </h2>
           <p className="text-xs text-gray-500">
             {new Date().toLocaleDateString()}
@@ -91,11 +91,6 @@ const Receipt: React.FC<ReceiptProps> = ({ calculations }) => {
           <div className="flex justify-between font-bold bg-gradient-to-r from-purple-200 via-pink-200 to-rose-200 p-3 rounded-md">
             <span className="text-purple-900">Total Amount</span>
             <span className="text-purple-900">₹ {calculations.total}</span>
-          </div>
-
-          <div className="text-center text-xs text-gray-500 mt-4">
-            <p>Thank you for your purchase!</p>
-            <p>All prices are in Indian Rupees (₹)</p>
           </div>
         </div>
       </div>
