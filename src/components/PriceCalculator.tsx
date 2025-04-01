@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Calculator, Weight, PlusCircle, ArrowRight } from "lucide-react";
+import React, { useState, useCallback, useMemo } from "react";
+import { Weight, PlusCircle, ArrowRight } from "lucide-react";
 import { Card } from "./ui/card";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
@@ -90,20 +90,6 @@ const PriceCalculator = () => {
     purities,
   ]);
 
-  useEffect(() => {
-    if (itemWeight !== "" && goldRate !== "") {
-      calculateTotal();
-    }
-  }, [
-    itemWeight,
-    stoneWeight,
-    purity,
-    goldRate,
-    makingCharges,
-    stoneCharges,
-    calculateTotal,
-  ]);
-
   const handleInputChange = (
     setter: React.Dispatch<React.SetStateAction<number | "">>,
     value: string
@@ -118,16 +104,19 @@ const PriceCalculator = () => {
     }
   };
 
-  return (
-    <div className="container mx-auto px-2 max-w-md">
-      <div className="space-y-6">
-        <div className="flex items-center justify-center space-x-2 mb-6">
-          <Calculator className="h-7 w-7 text-purple-500" />
-          <h1 className="text-2xl font-bold text-center bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 bg-clip-text text-transparent">
-            Price Calculator
-          </h1>
-        </div>
+  const resetForm = () => {
+    setItemWeight("");
+    setStoneWeight("");
+    setPurity("24K");
+    setGoldRate("");
+    setMakingCharges(8);
+    setStoneCharges("");
+    setCalculations(null);
+  };
 
+  return (
+    <div className="container mx-auto px-2 max-w-md py-2">
+      <div className="space-y-6">
         <Card className="p-5 shadow-lg border-purple-200 bg-gradient-to-br from-white to-purple-50 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 via-pink-100/20 to-rose-100/30 opacity-50 pointer-events-none"></div>
 
@@ -259,14 +248,30 @@ const PriceCalculator = () => {
               </div>
             </div>
 
-            <Button
-              onClick={calculateTotal}
-              className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 hover:from-purple-600 hover:via-pink-600 hover:to-rose-500 text-white shadow-md"
-            >
-              Calculate <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <div className="flex justify-between space-x-2">
+              <Button
+                onClick={resetForm}
+                className="w-full bg-transparent border border-rose-500 text-rose-500 hover:bg-rose-100 hover:border-rose-600 hover:text-rose-600 shadow-md transition-all"
+              >
+                Reset
+              </Button>
+
+              <Button
+                onClick={calculateTotal}
+                className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 hover:from-purple-600 hover:via-pink-600 hover:to-rose-500 text-white shadow-md"
+              >
+                Calculate <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </Card>
+
+        {calculations && (
+          <div className="flex justify-between font-bold bg-gradient-to-r from-purple-200 via-pink-200 to-rose-200 p-3 rounded-md">
+            <span className="text-purple-900">Total Amount</span>
+            <span className="text-purple-900">₹ {calculations?.total}</span>
+          </div>
+        )}
 
         {calculations && <Receipt calculations={calculations} />}
       </div>
