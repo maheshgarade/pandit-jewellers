@@ -87,7 +87,7 @@ const PriceCalculator = () => {
   return (
     <div className="container mx-auto px-2 max-w-md py-2">
       <div className="space-y-6">
-        <Card className="mb-2 p-5 shadow-lg border-purple-200 bg-gradient-to-br from-white to-purple-50 relative overflow-hidden">
+        <Card className="mb-2 p-5 pt=[10px] shadow-lg border-purple-200 bg-gradient-to-br from-white to-purple-50 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 via-pink-100/20 to-rose-100/30 opacity-50 pointer-events-none"></div>
 
           <div className="relative z-10 space-y-4">
@@ -116,7 +116,7 @@ const PriceCalculator = () => {
               <div className="space-y-2">
                 <Label
                   htmlFor="goldRate"
-                  className="text-purple-800 font-medium"
+                  className="text-purple-800 flex items-center font-medium"
                 >
                   Gold Rate (per gram)
                 </Label>
@@ -129,7 +129,7 @@ const PriceCalculator = () => {
                   onChange={(e) =>
                     handleInputChange(setGoldRate, e.target.value)
                   }
-                  placeholder="Enter current gold rate"
+                  placeholder="Enter Gold rate"
                 />
               </div>
             </div>
@@ -145,7 +145,7 @@ const PriceCalculator = () => {
                 </Label>
                 <div className="flex items-center space-x-2">
                   <select
-                    className="border rounded-lg bg-white/80 focus:ring-purple-500 focus:border-purple-500"
+                    className="border border-purple-200 rounded-lg bg-white/80 focus:ring-purple-500 focus:border-purple-500"
                     value={makingChargesType}
                     onChange={(e) =>
                       setMakingChargesType(
