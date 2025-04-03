@@ -1,94 +1,58 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback } from "react";
 import { Weight, PlusCircle, ArrowRight } from "lucide-react";
 import { Card } from "./ui/card";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 import { Button } from "./ui/button";
 import Receipt from "./Receipt";
 
 interface Calculations {
-  netGoldWeight: string;
+  netWeight: string;
   goldPrice: string;
   makingChargesAmount: string;
-  stoneCharges: string;
+  otherCharges: string;
   gstAmount: string;
   subtotal: string;
   total: string;
-  purity: string;
-  purityPercentage: number;
 }
 
 const PriceCalculator = () => {
-  const [itemWeight, setItemWeight] = useState<number | "">("");
-  const [stoneWeight, setStoneWeight] = useState<number | "">("");
-  const [purity, setPurity] = useState<string>("24K");
+  const [netWeight, setNetWeight] = useState<number | "">("");
   const [goldRate, setGoldRate] = useState<number | "">("");
-  const [makingCharges, setMakingCharges] = useState<number | "">(8);
-  const [stoneCharges, setStoneCharges] = useState<number | "">("");
+  const [makingCharges, setMakingCharges] = useState<number | "">("");
+  const [otherCharges, setOtherCharges] = useState<number | "">("");
   const [calculations, setCalculations] = useState<Calculations | null>(null);
-
-  const purities = useMemo(
-    () => ({
-      "24K": 99.9,
-      "22K": 91.6,
-      "18K": 75.0,
-    }),
-    []
-  );
 
   const GST_RATE = 3; // GST percentage
 
   const calculateTotal = useCallback(() => {
-    if (itemWeight === "" || goldRate === "") {
+    if (netWeight === "" || goldRate === "") {
       return;
     }
 
-    const numItemWeight = Number(itemWeight);
-    const numStoneWeight = Number(stoneWeight || 0);
-    const numGoldRate = Number(goldRate);
     const numMakingCharges = Number(makingCharges || 0);
-    const numStoneCharges = Number(stoneCharges || 0);
+    const numOtherCharges = Number(otherCharges || 0);
 
-    const netGoldWeight = Math.max(0, numItemWeight - numStoneWeight);
-
-    const purityPercentage = purities[purity as keyof typeof purities] / 100;
-    const goldPrice = netGoldWeight * numGoldRate * purityPercentage;
+    const goldPrice = Number(netWeight * goldRate);
 
     const makingChargesAmount = (goldPrice * numMakingCharges) / 100;
 
-    const subtotal = goldPrice + makingChargesAmount + numStoneCharges;
+    const subtotal = goldPrice + makingChargesAmount + numOtherCharges;
 
     const gstAmount = (subtotal * GST_RATE) / 100;
 
     const total = subtotal + gstAmount;
 
     setCalculations({
-      netGoldWeight: netGoldWeight.toFixed(3),
-      goldPrice: goldPrice.toFixed(2),
+      netWeight: netWeight.toFixed(3),
+      goldPrice: Math.round(goldPrice).toFixed(0),
       makingChargesAmount: makingChargesAmount.toFixed(2),
-      stoneCharges: numStoneCharges.toFixed(2),
+      otherCharges: numOtherCharges.toFixed(2),
       gstAmount: gstAmount.toFixed(2),
       subtotal: subtotal.toFixed(2),
       total: total.toFixed(2),
-      purity: purity,
-      purityPercentage: purities[purity as keyof typeof purities],
     });
-  }, [
-    itemWeight,
-    stoneWeight,
-    purity,
-    goldRate,
-    makingCharges,
-    stoneCharges,
-    purities,
-  ]);
+  }, [netWeight, goldRate, makingCharges, otherCharges]);
 
   const handleInputChange = (
     setter: React.Dispatch<React.SetStateAction<number | "">>,
@@ -105,19 +69,17 @@ const PriceCalculator = () => {
   };
 
   const resetForm = () => {
-    setItemWeight("");
-    setStoneWeight("");
-    setPurity("24K");
+    setNetWeight("");
     setGoldRate("");
-    setMakingCharges(8);
-    setStoneCharges("");
+    setMakingCharges("");
+    setOtherCharges("");
     setCalculations(null);
   };
 
   return (
     <div className="container mx-auto px-2 max-w-md py-2">
       <div className="space-y-6">
-        <Card className="p-5 shadow-lg border-purple-200 bg-gradient-to-br from-white to-purple-50 relative overflow-hidden">
+        <Card className="mb-2 p-5 shadow-lg border-purple-200 bg-gradient-to-br from-white to-purple-50 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 via-pink-100/20 to-rose-100/30 opacity-50 pointer-events-none"></div>
 
           <div className="relative z-10 space-y-4">
@@ -136,52 +98,32 @@ const PriceCalculator = () => {
                   min="0"
                   step="0.001"
                   className="border-purple-200 focus:border-purple-500 focus:ring-purple-500 bg-white/80"
-                  value={itemWeight}
+                  value={netWeight}
                   onChange={(e) =>
-                    handleInputChange(setItemWeight, e.target.value)
+                    handleInputChange(setNetWeight, e.target.value)
                   }
                   placeholder="Enter weight"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="purity" className="text-purple-800 font-medium">
-                  Gold Purity
-                </Label>
-                <Select
-                  value={purity}
-                  onValueChange={(value: string) => setPurity(value)}
+                <Label
+                  htmlFor="goldRate"
+                  className="text-purple-800 font-medium"
                 >
-                  <SelectTrigger className="border-purple-200 focus:border-purple-500 focus:ring-purple-500 bg-white/80">
-                    <SelectValue placeholder="Select purity" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-purple-200">
-                    <SelectItem value="24K" className="hover:bg-purple-50">
-                      24K - 99.9%
-                    </SelectItem>
-                    <SelectItem value="22K" className="hover:bg-purple-50">
-                      22K - 91.6%
-                    </SelectItem>
-                    <SelectItem value="18K" className="hover:bg-purple-50">
-                      18K - 75.0%
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                  Gold Rate (per gram)
+                </Label>
+                <Input
+                  id="goldRate"
+                  type="number"
+                  min="0"
+                  className="border-purple-200 focus:border-purple-500 focus:ring-purple-500 bg-white/80"
+                  value={goldRate}
+                  onChange={(e) =>
+                    handleInputChange(setGoldRate, e.target.value)
+                  }
+                  placeholder="Enter current gold rate"
+                />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="goldRate" className="text-purple-800 font-medium">
-                Gold Rate (per gram)
-              </Label>
-              <Input
-                id="goldRate"
-                type="number"
-                min="0"
-                className="border-purple-200 focus:border-purple-500 focus:ring-purple-500 bg-white/80"
-                value={goldRate}
-                onChange={(e) => handleInputChange(setGoldRate, e.target.value)}
-                placeholder="Enter current gold rate"
-              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -202,7 +144,7 @@ const PriceCalculator = () => {
                   onChange={(e) =>
                     handleInputChange(setMakingCharges, e.target.value)
                   }
-                  placeholder="8"
+                  placeholder="0"
                 />
               </div>
               <div className="space-y-2">
@@ -217,9 +159,9 @@ const PriceCalculator = () => {
                   type="number"
                   min="0"
                   className="border-purple-200 focus:border-purple-500 focus:ring-purple-500 bg-white/80"
-                  value={stoneCharges}
+                  value={otherCharges}
                   onChange={(e) =>
-                    handleInputChange(setStoneCharges, e.target.value)
+                    handleInputChange(setOtherCharges, e.target.value)
                   }
                   placeholder="0"
                 />
@@ -243,13 +185,6 @@ const PriceCalculator = () => {
             </div>
           </div>
         </Card>
-
-        {calculations && (
-          <div className="flex justify-between font-bold bg-gradient-to-r from-purple-200 via-pink-200 to-rose-200 p-3 rounded-md">
-            <span className="text-purple-900">Total Amount</span>
-            <span className="text-purple-900">₹ {calculations?.total}</span>
-          </div>
-        )}
 
         {calculations && <Receipt calculations={calculations} />}
       </div>

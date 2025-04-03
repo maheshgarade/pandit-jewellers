@@ -4,50 +4,36 @@ import { Separator } from "./ui/separator";
 
 interface ReceiptProps {
   calculations: {
-    netGoldWeight: string;
+    netWeight: string;
     goldPrice: string;
     makingChargesAmount: string;
-    stoneCharges: string;
+    otherCharges: string;
     gstAmount: string;
     subtotal: string;
     total: string;
-    purity: string;
-    purityPercentage: number;
   };
 }
 
 const Receipt: React.FC<ReceiptProps> = ({ calculations }) => {
   return (
-    <Card className="p-5 shadow-lg border-purple-200 bg-white relative overflow-hidden">
+    <Card className="p-5 pt-[10px] shadow-lg border-purple-200 bg-white relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 opacity-60 pointer-events-none"></div>
 
       <div className="relative z-10">
-        <div className="text-center mb-5">
+        <div className="text-center mb-[10px]">
           <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-transparent">
             Bill Summary
           </h2>
-          <p className="text-xs text-gray-500">
-            {new Date().toLocaleDateString()}
-          </p>
         </div>
 
         <div className="space-y-3">
-          <div className="bg-gradient-to-r from-purple-100 to-pink-100 p-2.5 rounded-md">
-            <div className="flex justify-between text-sm">
-              <span className="font-medium text-purple-900">Gold Purity</span>
-              <span className="text-purple-800">
-                {calculations.purity} ({calculations.purityPercentage}%)
-              </span>
-            </div>
-          </div>
-
           <div className="bg-gradient-to-r from-pink-100 to-rose-100 p-2.5 rounded-md">
             <div className="flex justify-between text-sm">
               <span className="font-medium text-purple-900">
                 Net Gold Weight
               </span>
               <span className="text-purple-800">
-                {calculations.netGoldWeight} g
+                {calculations.netWeight} g
               </span>
             </div>
           </div>
@@ -68,9 +54,9 @@ const Receipt: React.FC<ReceiptProps> = ({ calculations }) => {
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Stone Charges</span>
+              <span className="text-gray-600">Other Charges</span>
               <span className="text-purple-700">
-                ₹ {calculations.stoneCharges}
+                ₹ {calculations.otherCharges}
               </span>
             </div>
           </div>
