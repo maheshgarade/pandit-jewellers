@@ -87,7 +87,7 @@ const PriceCalculator = () => {
   return (
     <div className="container mx-auto px-2 max-w-md py-2">
       <div className="space-y-6">
-        <Card className="mb-2 p-5 pt=[10px] shadow-lg border-purple-200 bg-gradient-to-br from-white to-purple-50 relative overflow-hidden">
+        <Card className="mb-2 p-5 pt=[10px] pb-[10px] shadow-lg border-purple-200 bg-gradient-to-br from-white to-purple-50 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 via-pink-100/20 to-rose-100/30 opacity-50 pointer-events-none"></div>
 
           <div className="relative z-10 space-y-4">
