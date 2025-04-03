@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.panditjewellers.app",
-  appName: "pandit-jewellers",
+  appName: "Pandit Jewellers",
   webDir: "dist",
 };
 
