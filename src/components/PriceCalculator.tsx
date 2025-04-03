@@ -20,6 +20,9 @@ const PriceCalculator = () => {
   const [netWeight, setNetWeight] = useState<number | "">("");
   const [goldRate, setGoldRate] = useState<number | "">("");
   const [makingCharges, setMakingCharges] = useState<number | "">("");
+  const [makingChargesType, setMakingChargesType] = useState<
+    "percentage" | "flat"
+  >("percentage"); // Added state for type
   const [otherCharges, setOtherCharges] = useState<number | "">("");
   const [calculations, setCalculations] = useState<Calculations | null>(null);
 
@@ -35,7 +38,11 @@ const PriceCalculator = () => {
 
     const goldPrice = Number(netWeight * goldRate);
 
-    const makingChargesAmount = (goldPrice * numMakingCharges) / 100;
+    // Calculate making charges based on type
+    const makingChargesAmount =
+      makingChargesType === "percentage"
+        ? (goldPrice * numMakingCharges) / 100 // Percentage
+        : numMakingCharges; // Flat value
 
     const subtotal = goldPrice + makingChargesAmount + numOtherCharges;
 
@@ -46,13 +53,13 @@ const PriceCalculator = () => {
     setCalculations({
       netWeight: netWeight.toFixed(3),
       goldPrice: Math.round(goldPrice).toFixed(0),
-      makingChargesAmount: makingChargesAmount.toFixed(2),
-      otherCharges: numOtherCharges.toFixed(2),
-      gstAmount: gstAmount.toFixed(2),
-      subtotal: subtotal.toFixed(2),
-      total: total.toFixed(2),
+      makingChargesAmount: Math.round(makingChargesAmount).toFixed(0),
+      otherCharges: Math.round(numOtherCharges).toFixed(0),
+      gstAmount: Math.round(gstAmount).toFixed(0),
+      subtotal: Math.round(subtotal).toFixed(0),
+      total: Math.round(total).toFixed(0),
     });
-  }, [netWeight, goldRate, makingCharges, otherCharges]);
+  }, [netWeight, goldRate, makingCharges, makingChargesType, otherCharges]);
 
   const handleInputChange = (
     setter: React.Dispatch<React.SetStateAction<number | "">>,
@@ -72,6 +79,7 @@ const PriceCalculator = () => {
     setNetWeight("");
     setGoldRate("");
     setMakingCharges("");
+    setMakingChargesType("percentage"); // Reset type
     setOtherCharges("");
     setCalculations(null);
   };
@@ -133,19 +141,33 @@ const PriceCalculator = () => {
                   className="text-purple-800 flex items-center font-medium"
                 >
                   <PlusCircle className="h-4 w-4 mr-1 text-purple-600" /> Making
-                  Charges (%)
+                  Charges
                 </Label>
-                <Input
-                  id="makingCharges"
-                  type="number"
-                  min="0"
-                  className="border-purple-200 focus:border-purple-500 focus:ring-purple-500 bg-white/80"
-                  value={makingCharges}
-                  onChange={(e) =>
-                    handleInputChange(setMakingCharges, e.target.value)
-                  }
-                  placeholder="0"
-                />
+                <div className="flex items-center space-x-2">
+                  <select
+                    className="border rounded-lg bg-white/80 focus:ring-purple-500 focus:border-purple-500"
+                    value={makingChargesType}
+                    onChange={(e) =>
+                      setMakingChargesType(
+                        e.target.value as "percentage" | "flat"
+                      )
+                    }
+                  >
+                    <option value="percentage">%</option>
+                    <option value="flat">Flat</option>
+                  </select>
+                  <Input
+                    id="makingCharges"
+                    type="number"
+                    min="0"
+                    className="border-purple-200 focus:border-purple-500 focus:ring-purple-500 bg-white/80"
+                    value={makingCharges}
+                    onChange={(e) =>
+                      handleInputChange(setMakingCharges, e.target.value)
+                    }
+                    placeholder="0"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label
