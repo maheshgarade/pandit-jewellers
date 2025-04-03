@@ -145,7 +145,8 @@ const PriceCalculator = () => {
                 </Label>
                 <div className="flex items-center space-x-2">
                   <select
-                    className="border border-purple-200 rounded-lg bg-white/80 focus:ring-purple-500 focus:border-purple-500"
+                    className="h-[40px] border border-purple-200 rounded-lg bg-white/80 focus:ring-purple-500
+                    focus:border-purple-500"
                     value={makingChargesType}
                     onChange={(e) =>
                       setMakingChargesType(
@@ -172,7 +173,7 @@ const PriceCalculator = () => {
               <div className="space-y-2">
                 <Label
                   htmlFor="stoneCharges"
-                  className="text-purple-800 font-medium"
+                  className="text-purple-800 flex items-center font-medium"
                 >
                   Other Charges
                 </Label>
