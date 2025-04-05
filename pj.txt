@@ -55,3 +55,11 @@ react-hook-form
 input-otp
 react-resizable-panels
 
+1. Calculator & Customers have below section are overflowing and not fitting inside  mobile view.
+
+customer sessions 
+Itesm Inquired by
+Item Details
+Price Breakdown
+
+2. I need you to add nice colorfull background to bottom menu bar and header as well. should have vibrant colors. Gradient if needed but should look colorful and modern.
