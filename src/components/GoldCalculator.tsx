@@ -25,7 +25,6 @@ const GoldCalculator = () => {
   >("percentage"); // Added state for type
   const [otherCharges, setOtherCharges] = useState<number | "">("");
   const [calculations, setCalculations] = useState<Calculations | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
 
   const GST_RATE = 3; // GST percentage
 
@@ -209,23 +208,7 @@ const GoldCalculator = () => {
             </div>
           </div>
         </Card>
-
-        {calculations && (
-          <div className="flex justify-between font-bold bg-gradient-to-r from-purple-200 via-pink-200 to-rose-200 p-3 rounded-md mb-2">
-            <span className="text-purple-900">Total Amount</span>
-            <span className="text-purple-900">₹ {calculations.total}</span>
-          </div>
-        )}
-
-        {calculations && (
-          <Button
-            onClick={() => setShowSummary(!showSummary)}
-            className="w-full text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
-          >
-            {showSummary ? "Hide Summary" : "Show Summary"}
-          </Button>
-        )}
-        {showSummary && calculations && <Receipt calculations={calculations} />}
+        {calculations && <Receipt calculations={calculations} />}
       </div>
     </div>
   );
