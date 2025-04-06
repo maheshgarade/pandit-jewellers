@@ -6,7 +6,7 @@ import MortgageCalculator from "./MortgageCalculator";
 
 const CalculatorsSection: React.FC = () => {
   return (
-    <div className="container mx-auto px-4 py-1">
+    <div className="container mx-auto px-4 py-2">
       <Tabs defaultValue="gold" className="w-full">
         <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-purple-100 to-pink-100">
           <TabsTrigger
