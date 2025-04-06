@@ -1,29 +1,30 @@
-
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Calculator, Users, BookmarkCheck } from 'lucide-react';
+import React from "react";
+import { Link } from "react-router-dom";
+import { Calculator, Users, BookmarkCheck } from "lucide-react";
+import { useLanguage } from "../context/LanguageContext";
 
 interface BottomMenuProps {
   activePage: string;
 }
 
 const BottomMenu: React.FC<BottomMenuProps> = ({ activePage }) => {
+  const { t } = useLanguage();
   const menuItems = [
-    { 
-      name: 'Calculator', 
-      path: '/', 
-      icon: Calculator 
+    {
+      name: t("menu.calculator"),
+      path: "/",
+      icon: Calculator,
     },
-    { 
-      name: 'Customers', 
-      path: '/customers', 
-      icon: Users 
+    {
+      name: t("menu.customers"),
+      path: "/customers",
+      icon: Users,
     },
-    { 
-      name: 'Shortlisted', 
-      path: '/shortlisted', 
-      icon: BookmarkCheck 
-    }
+    {
+      name: t("menu.shortlisted"),
+      path: "/shortlisted",
+      icon: BookmarkCheck,
+    },
   ];
 
   return (
@@ -36,15 +37,15 @@ const BottomMenu: React.FC<BottomMenuProps> = ({ activePage }) => {
               key={item.name}
               to={item.path}
               className={`flex flex-col items-center justify-center w-full h-full transition-colors ${
-                isActive 
-                  ? 'text-purple-600' 
-                  : 'text-gray-500 hover:text-purple-400'
+                isActive
+                  ? "text-purple-600"
+                  : "text-gray-500 hover:text-purple-400"
               }`}
             >
-              <item.icon 
-                className={`h-5 w-5 mb-1 ${isActive ? 'text-purple-600' : ''}`} 
+              <item.icon
+                className={`h-5 w-5 mb-1 ${isActive ? "text-purple-600" : ""}`}
               />
-              <span className={`text-xs ${isActive ? 'font-medium' : ''}`}>
+              <span className={`text-xs ${isActive ? "font-medium" : ""}`}>
                 {item.name}
               </span>
             </Link>

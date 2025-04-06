@@ -11,6 +11,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import App from "./App";
 
 import ContextsProvider from "./context/ContextsProvider.tsx";
+import { LanguageProvider } from "./context/LanguageContext.tsx";
 
 const queryClient = new QueryClient();
 
@@ -19,13 +20,15 @@ createRoot(document.getElementById("root")!).render(
     <StyledEngineProvider injectFirst>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <ContextsProvider>
-            <BrowserRouter>
-              <App />
-            </BrowserRouter>
-          </ContextsProvider>
+          <LanguageProvider>
+            <Toaster />
+            <Sonner />
+            <ContextsProvider>
+              <BrowserRouter>
+                <App />
+              </BrowserRouter>
+            </ContextsProvider>
+          </LanguageProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </StyledEngineProvider>

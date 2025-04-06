@@ -5,6 +5,7 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import Receipt from "./Receipt";
+import { useLanguage } from "../context/LanguageContext";
 
 interface Calculations {
   netWeight: string;
@@ -17,6 +18,7 @@ interface Calculations {
 }
 
 const GoldCalculator = () => {
+  const { t } = useLanguage();
   const [netWeight, setNetWeight] = useState<number | "">("");
   const [goldRate, setGoldRate] = useState<number | "">("");
   const [makingCharges, setMakingCharges] = useState<number | "">("");
@@ -97,8 +99,8 @@ const GoldCalculator = () => {
                   htmlFor="itemWeight"
                   className="text-purple-800 flex items-center font-medium"
                 >
-                  <Weight className="h-4 w-4 mr-1 text-purple-600" /> Net Weight
-                  (g)
+                  <Weight className="h-4 w-4 mr-1 text-purple-600" />{" "}
+                  {t("gold.itemWeight")}
                 </Label>
                 <Input
                   id="itemWeight"
@@ -118,7 +120,7 @@ const GoldCalculator = () => {
                   htmlFor="goldRate"
                   className="text-purple-800 flex items-center font-medium"
                 >
-                  Gold Rate (per gram)
+                  {t("gold.goldRate")}
                 </Label>
                 <Input
                   id="goldRate"
@@ -140,8 +142,8 @@ const GoldCalculator = () => {
                   htmlFor="makingCharges"
                   className="text-purple-800 flex items-center font-medium"
                 >
-                  <PlusCircle className="h-4 w-4 mr-1 text-purple-600" /> Making
-                  Charges
+                  <PlusCircle className="h-4 w-4 mr-1 text-purple-600" />{" "}
+                  {t("gold.makingCharges")}
                 </Label>
                 <div className="flex items-center space-x-2">
                   <select
@@ -175,7 +177,7 @@ const GoldCalculator = () => {
                   htmlFor="stoneCharges"
                   className="text-purple-800 flex items-center font-medium"
                 >
-                  Other Charges
+                  {t("gold.stoneCharges")}
                 </Label>
                 <Input
                   id="stoneCharges"
@@ -196,14 +198,14 @@ const GoldCalculator = () => {
                 onClick={resetForm}
                 className="w-full bg-transparent border border-rose-500 text-rose-500 hover:bg-rose-100 hover:border-rose-600 hover:text-rose-600 shadow-md transition-all"
               >
-                Reset
+                {t("gold.reset")}
               </Button>
 
               <Button
                 onClick={calculateTotal}
                 className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 hover:from-purple-600 hover:via-pink-600 hover:to-rose-500 text-white shadow-md"
               >
-                Calculate <ArrowRight className="ml-2 h-4 w-4" />
+                {t("gold.calculate")} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </div>

@@ -1,0 +1,41 @@
+{
+  "app": {
+    "title": "Pandit Jeweller"
+  },
+  "calculators": {
+    "title": "Calculators",
+    "gold": "Gold",
+    "silver": "Silver",
+    "mortgage": "Mortgage"
+  },
+  "menu": {
+    "calculator": "Calculator",
+    "customers": "Customers",
+    "shortlisted": "Shortlisted"
+  },
+  "gold": {
+    "title": "Gold Price Calculator",
+    "itemWeight": "Item Weight (g)",
+    "stoneWeight": "Stone Weight (g)",
+    "purity": "Gold Purity",
+    "goldRate": "Gold Rate (per gram)",
+    "makingCharges": "Making Charges (%)",
+    "stoneCharges": "Stone Charges",
+    "calculate": "Calculate",
+    "reset": "Reset",
+    "receipt": {
+      "title": "Gold Jewelry Bill",
+      "purity": "Gold Purity",
+      "weight": "Net Gold Weight",
+      "price": "Gold Price",
+      "making": "Making Charges",
+      "stone": "Stone Charges",
+      "subtotal": "Subtotal",
+      "gst": "GST (3%)",
+      "total": "Total Amount",
+      "thanks": "Thank you for your purchase!",
+      "currency": "All prices are in Indian Rupees (₹)"
+    }
+  },
+  "comingSoon": "is currently under development. Please check back soon for this feature!"
+}

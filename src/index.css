@@ -97,3 +97,8 @@
     @apply bg-background text-foreground;
   }
 } */
+
+.bg-popover {
+  background-color: #ffffff;
+  border: 1px;
+}
