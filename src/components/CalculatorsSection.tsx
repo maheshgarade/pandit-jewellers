@@ -2,7 +2,7 @@ import React from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import GoldCalculator from "./GoldCalculator";
 import SilverCalculator from "./SilverCalculator";
-import MortgageCalculator from "./MortgageCalculator";
+import ExchangeCalculator from "./ExchangeCalculator";
 
 const CalculatorsSection: React.FC = () => {
   return (
@@ -25,7 +25,7 @@ const CalculatorsSection: React.FC = () => {
             value="mortgage"
             className="data-[state=active]:bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 data-[state=active]:text-white"
           >
-            Mortgage
+            Exchange
           </TabsTrigger>
         </TabsList>
         <TabsContent value="gold">
@@ -35,7 +35,7 @@ const CalculatorsSection: React.FC = () => {
           <SilverCalculator />
         </TabsContent>
         <TabsContent value="mortgage">
-          <MortgageCalculator />
+          <ExchangeCalculator />
         </TabsContent>
       </Tabs>
     </div>
