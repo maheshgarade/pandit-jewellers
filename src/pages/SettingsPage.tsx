@@ -4,8 +4,8 @@ import { ChevronRight, Printer as PrinterIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { inputCls, Switch } from "@/components/calc/ui";
-import { DetailFields, FieldSettings, purityLabel, ShopDetails, useStore } from "@/lib/store";
-import { drawReceipt } from "@/lib/receipt";
+import { DetailFields, EstimateState, FieldSettings, purityLabel, ShopDetails, useStore } from "@/lib/store";
+import { buildEstimate, drawEstimate } from "@/lib/receipt";
 
 const Card: React.FC<{ title: string; hint?: string; children: React.ReactNode }> = ({ title, hint, children }) => (
   <section className="overflow-hidden rounded-xl border border-purple-200 bg-white">
@@ -23,6 +23,22 @@ const SHOP_FIELDS: { key: keyof ShopDetails; label: string; placeholder: string 
   { key: "other", label: "Other details", placeholder: "e.g. BIS hallmark reg. no., email" },
   { key: "footer", label: "Footer message", placeholder: "e.g. Thank you! Visit again." },
 ];
+
+const LAYOUTS = [
+  { value: "compact", label: "Compact", hint: "Net Wt and Total" },
+  { value: "detailed", label: "Detailed", hint: "Weights, metal, making, GST" },
+] as const;
+
+/** A made-up estimate for the Settings preview. */
+const SAMPLE: EstimateState = {
+  items: [
+    { metal: "gold", name: "Gold Ring", code: "PJ-0142", gross: 8.45, less: 0.33, lessLabel: "Less Wt", net: 8.12, price: 55622, making: 3654, gst: 1778.28, total: 61054.28 },
+    { metal: "silver", name: "Silver Anklet", net: 42.3, price: 3891.6, making: 634.5, gst: 135.78, total: 4661.88 },
+  ],
+  old: [{ metal: "gold", name: "Old Gold", net: 6, fine: 5.496, total: 41110.08 }],
+  customer: { name: "Customer name", number: "98XXXXXX21", address: "" },
+  no: null,
+};
 
 export default function SettingsPage() {
   const { state, update } = useStore();
@@ -54,20 +70,8 @@ export default function SettingsPage() {
   };
 
   const showPreview = async () => {
-    const c = await drawReceipt(
-      {
-        title: "Gold Jewellery Estimate",
-        rows: [
-          { label: "Net Weight", value: "10.000 g" },
-          { label: "Gold Price", value: "₹ 0" },
-        ],
-        totalLabel: "Total Amount",
-        total: "0",
-      },
-      state.shop,
-      state.paper,
-      state.billSeq
-    );
+    const est = buildEstimate(SAMPLE, { ...state.details, customerName: true, customerNumber: true }, state.roundOff);
+    const c = await drawEstimate(est, state.shop, state.paper, state.billSeq, state.layout, state.printShopDetails);
     setPreview(c.toDataURL("image/png"));
   };
 
@@ -94,6 +98,7 @@ export default function SettingsPage() {
           <Switch on={state.details.productCode} onToggle={() => setDetail("productCode")} label="Product code" hint="Letters and numbers" />
           <Switch on={state.details.customerName} onToggle={() => setDetail("customerName")} label="Customer name" />
           <Switch on={state.details.customerNumber} onToggle={() => setDetail("customerNumber")} label="Customer number" />
+          <Switch on={state.details.customerAddress} onToggle={() => setDetail("customerAddress")} label="Customer address" />
           <Switch
             on={state.roundOff}
             onToggle={() => update((s) => ({ ...s, roundOff: !s.roundOff }))}
@@ -102,7 +107,36 @@ export default function SettingsPage() {
           />
         </Card>
 
-        <Card title="Shop details" hint="Printed on every estimate and on the digital copy you share or download.">
+        <Card title="Estimate print" hint="How the printed and shared estimate looks.">
+          <div role="radiogroup" aria-label="Item cards" className="grid grid-cols-2 gap-2 px-4 pb-2">
+            {LAYOUTS.map((l) => (
+              <button
+                key={l.value}
+                type="button"
+                role="radio"
+                aria-checked={state.layout === l.value}
+                onClick={() => update((s) => ({ ...s, layout: l.value }))}
+                className={`flex min-h-16 flex-col items-center justify-center rounded-xl border-2 px-2 text-center ${state.layout === l.value ? "border-purple-700 bg-purple-50" : "border-gray-200"}`}
+              >
+                <span className="text-[15px] font-semibold text-gray-900">{l.label}</span>
+                <span className="text-xs text-gray-500">{l.hint}</span>
+              </button>
+            ))}
+          </div>
+          <Switch
+            on={state.printShopDetails}
+            onToggle={() => update((s) => ({ ...s, printShopDetails: !s.printShopDetails }))}
+            label="Shop details"
+            hint="Logo, address, phone, GSTIN, other details and footer. Off prints only the shop name, to save paper."
+          />
+          <div className="px-4 pb-4 pt-2">
+            <button type="button" onClick={showPreview} className="h-11 w-full rounded-lg border border-purple-300 bg-purple-50 text-sm font-semibold text-purple-800">
+              Preview estimate
+            </button>
+          </div>
+        </Card>
+
+        <Card title="Shop details" hint="The shop name prints at the top of every estimate. The rest prints when Shop details is on under Estimate print.">
           <div className="flex flex-col gap-3 px-4 pb-4">
             {SHOP_FIELDS.map((sf) => (
               <div key={sf.key} className="flex flex-col gap-1">
@@ -112,9 +146,6 @@ export default function SettingsPage() {
                 <input id={`shop-${sf.key}`} value={state.shop[sf.key]} placeholder={sf.placeholder} onChange={(e) => setShop(sf.key, e.target.value)} className={inputCls} />
               </div>
             ))}
-            <button type="button" onClick={showPreview} className="h-11 rounded-lg border border-purple-300 bg-purple-50 text-sm font-semibold text-purple-800">
-              Preview estimate
-            </button>
           </div>
         </Card>
 

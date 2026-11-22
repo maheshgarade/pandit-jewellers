@@ -65,6 +65,13 @@
     "productCode": "Product Code",
     "customerName": "Customer Name",
     "customerNumber": "Customer Number",
+    "customerAddress": "Customer Address",
+    "enterWeightAndRate": "Enter the weight and rate first.",
+    "itemAdded": "added to the estimate",
+    "defaultItem": "Item",
+    "oldItem": "Old",
+    "alreadyPrinted": "This estimate is already printed or shared. Add this item to it, or start a new estimate?",
+    "addToIt": "Add to it",
     "roundOff": "Round off",
     "fineGold": "Fine Gold (100%)",
     "eq995": "Equivalent in 99.50",
@@ -74,6 +81,12 @@
     "grossMinusPacket": "Gross − Packet",
     "sameAsGross": "Same as Gross",
     "comingSoon": "Calculation coming soon."
+  },
+  "estimate": {
+    "title": "Estimate",
+    "new": "New estimate",
+    "newConfirm": "Clear all items, old gold and customer details from this estimate?",
+    "clear": "Clear"
   },
   "comingSoon":"is currently under development. Please check back soon for this feature!"
 }

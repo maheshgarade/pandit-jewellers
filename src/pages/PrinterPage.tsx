@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import type { PluginListenerHandle } from "@capacitor/core";
 import Layout from "@/components/Layout";
 import { useStore } from "@/lib/store";
-import { bytesToBase64, canvasToEscPos, drawReceipt } from "@/lib/receipt";
+import { bytesToBase64, canvasToEscPos, drawTestPrint } from "@/lib/receipt";
 import { FoundDevice, isNative, Printer, printerError } from "@/lib/printer";
 
 const SCAN_MS = 15_000;
@@ -74,12 +74,11 @@ export default function PrinterPage() {
   }, [scan, stop]);
 
   const testPrint = async (address: string, name: string) => {
-    const canvas = await drawReceipt(
-      { title: "Test print", rows: [{ label: "Printer", value: name }, { label: "Paper", value: state.paper === 58 ? "2 inch" : "3 inch" }], totalLabel: "OK", total: "0" },
-      state.shop,
-      state.paper,
-      0
-    );
+    const canvas = drawTestPrint(state.shop.name, state.paper, [
+      ["Test print", "OK"],
+      ["Printer", name],
+      ["Paper", state.paper === 58 ? "2 inch" : "3 inch"],
+    ]);
     await Printer.write({ address, data: bytesToBase64(canvasToEscPos(canvas)) });
   };
 

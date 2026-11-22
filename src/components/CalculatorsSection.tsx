@@ -2,6 +2,7 @@ import React from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 // import ExchangeCalculator from "./ExchangeCalculator"; // Exchange tab hidden for now
 import { MetalCalculator } from "./calc/MetalCalculator";
+import { EstimatePanel } from "./calc/EstimatePanel";
 import { useLanguage } from "../context/LanguageContext";
 
 const tabCls =
@@ -34,6 +35,8 @@ const CalculatorsSection: React.FC = () => {
           <ExchangeCalculator />
         </TabsContent> */}
       </Tabs>
+      {/* One estimate for both tabs: Gold and Silver items, and old gold / silver to deduct. */}
+      <EstimatePanel />
     </div>
   );
 };

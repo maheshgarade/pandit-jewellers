@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Download, Printer as PrinterIcon, Share2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
-import { Bill, bytesToBase64, canvasToBase64Png, canvasToEscPos, drawReceipt } from "@/lib/receipt";
+import { bytesToBase64, canvasToBase64Png, canvasToEscPos } from "@/lib/receipt";
 import { isNative, Printer, printerError } from "@/lib/printer";
 import { WhatsAppIcon } from "./ui";
 
@@ -15,16 +15,29 @@ const ACTION_TEXT: Record<Action, { title: string; go: string }> = {
   download: { title: "Download estimate", go: "Save image" },
 };
 
-/** Print / Share / WhatsApp / Download under a calculation result. Icon-only buttons with accessible names. */
-export const ResultActions: React.FC<{ bill: Bill }> = ({ bill }) => {
+/** Print / Share / WhatsApp / Download for an estimate. Icon-only buttons with accessible names. */
+export const ResultActions: React.FC<{
+  /** Draws the image with the given estimate number. */
+  render: (no: number) => Promise<HTMLCanvasElement>;
+  shareText: string;
+  /** The number the estimate already has. Without one it takes the next number, used up by the first print, share or save. */
+  no?: number | null;
+  onNumbered?: (no: number) => void;
+}> = ({ render, shareText, no: given, onNumbered }) => {
   const { state, update } = useStore();
   const [noPrinter, setNoPrinter] = useState(false);
   const [preview, setPreview] = useState<{ action: Action; url: string; canvas: HTMLCanvasElement } | null>(null);
   const [busy, setBusy] = useState(false);
   const paperName = state.paper === 58 ? "2 inch" : "3 inch";
-  const fileName = `estimate-${String(state.billSeq).padStart(4, "0")}.png`;
+  const no = given ?? state.billSeq;
+  const fileName = `estimate-${String(no).padStart(4, "0")}.png`;
 
-  const nextBill = () => update((s) => ({ ...s, billSeq: s.billSeq + 1 }));
+  /** After a print, share or save: a new estimate keeps the number it was given. */
+  const numbered = () => {
+    if (given != null) return;
+    update((s) => ({ ...s, billSeq: s.billSeq + 1 }));
+    onNumbered?.(no);
+  };
 
   const print = async () => {
     if (!state.printer) {
@@ -38,10 +51,10 @@ export const ResultActions: React.FC<{ bill: Bill }> = ({ bill }) => {
     setBusy(true);
     try {
       await Printer.ensureReady();
-      const canvas = await drawReceipt(bill, state.shop, state.paper, state.billSeq);
+      const canvas = await render(no);
       await Printer.write({ address: state.printer.address, data: bytesToBase64(canvasToEscPos(canvas)) });
       toast.success(`Printed on ${state.printer.name}`);
-      nextBill();
+      numbered();
     } catch (e) {
       toast.error(printerError(e));
     } finally {
@@ -50,14 +63,14 @@ export const ResultActions: React.FC<{ bill: Bill }> = ({ bill }) => {
   };
 
   const open = async (action: Action) => {
-    const canvas = await drawReceipt(bill, state.shop, state.paper, state.billSeq);
+    const canvas = await render(no);
     setPreview({ action, url: canvas.toDataURL("image/png"), canvas });
   };
 
   const go = async () => {
     if (!preview) return;
     const data = canvasToBase64Png(preview.canvas);
-    const text = `${state.shop.name} - ${bill.title}: ₹ ${bill.total}`;
+    const text = shareText;
     try {
       if (isNative()) {
         if (preview.action === "download") {
@@ -79,7 +92,7 @@ export const ResultActions: React.FC<{ bill: Bill }> = ({ bill }) => {
           a.click();
         }
       }
-      nextBill();
+      numbered();
       setPreview(null);
     } catch (e) {
       if ((e as Error)?.name !== "AbortError") toast.error(printerError(e));

@@ -1,23 +1,25 @@
 import React, { useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { formatINR, MakingType, makingText, Metal, Mode, rateKey, timeText, useStore } from "@/lib/store";
-import type { Bill } from "@/lib/receipt";
+import { toast } from "sonner";
+import { Customer, EMPTY_ESTIMATE, EstimateState, MakingType, makingText, Metal, Mode, rateKey, timeText, useStore } from "@/lib/store";
+import { money, type EstimateItem } from "@/lib/receipt";
 import { useLanguage } from "@/context/LanguageContext";
 import { Field, inputCls, linkBtnCls, Modal, NumberInput, primaryBtnCls, readOnlyCls, resetBtnCls } from "./ui";
 import { PurityCombo } from "./PurityCombo";
-import { ResultActions } from "./ResultActions";
 
 const GST_RATE = 3;
 const num = (v: string) => {
   const n = parseFloat(v);
   return isNaN(n) || n < 0 ? 0 : n;
 };
-const grams = (n: number) => `${n.toFixed(3)} g`;
-const rupees = (n: number) => `₹ ${formatINR(n)}`;
+const r2 = (n: number) => Math.round(n * 100) / 100;
+type ListKey = "items" | "old";
 
 /**
  * Sell / Buy calculator for one metal. Shared rows sit in the same place in every mode:
  * row 1 = Rate | Net Weight (Net on the right for quick entry), row 2 = mode-specific, then Reset | Calculate.
+ * Calculate adds the item to the estimate below, which both tabs share: Sell items are its cards, and Buy
+ * (old gold / silver) is deducted from them, or printed on its own as a purchase estimate.
  */
 export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
   const { t } = useLanguage();
@@ -35,9 +37,8 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
   const [purity, setPurity] = useState("91.6");
   const [itemName, setItemName] = useState("");
   const [productCode, setProductCode] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [customerNumber, setCustomerNumber] = useState("");
-  const [bill, setBill] = useState<Bill | null>(null);
+  /** An item waiting for "add it to the estimate already printed, or start a new one?" */
+  const [pending, setPending] = useState<{ it: EstimateItem; key: ListKey } | null>(null);
   const [dialog, setDialog] = useState<null | "rate" | "making">(null);
 
   const saved = state.rates[rateKey(metal, mode)];
@@ -73,107 +74,95 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
     setMTypeIn(null);
   };
 
-  const reset = () => {
+  // The customer belongs to the estimate, so both tabs show the same details.
+  const customer = state.estimate.customer;
+  const setCustomer = (k: keyof Customer, v: string) =>
+    update((s) => ({ ...s, estimate: { ...s.estimate, customer: { ...s.estimate.customer, [k]: v } } }));
+  const estimateEmpty = !state.estimate.items.length && !state.estimate.old.length;
+
+  /** Clears the item fields for the next item; rate, making, purity and customer stay. */
+  const clearItemFields = () => {
     setNetIn("");
     setGross("");
     setLess("");
+    setOther("");
+    setItemName("");
+    setProductCode("");
+  };
+
+  const reset = () => {
+    clearItemFields();
     setRateIn(null);
     setMakingIn(null);
     setMTypeIn(null);
-    setOther("");
     setPurity("91.6");
-    setItemName("");
-    setProductCode("");
-    setCustomerName("");
-    setCustomerNumber("");
-    setBill(null);
+    // Customer details are cleared with the estimate ("New estimate"), or here while nothing has been added yet.
+    if (estimateEmpty) update((s) => ({ ...s, estimate: { ...s.estimate, customer: EMPTY_ESTIMATE.customer } }));
   };
 
   const det = state.details;
-  const anyDetail = det.itemName || det.productCode || det.customerName || det.customerNumber;
-  const detailRows = () =>
-    [
-      det.customerName && customerName.trim() ? { label: t("calc.customerName"), value: customerName.trim() } : null,
-      det.customerNumber && customerNumber.trim() ? { label: t("calc.customerNumber"), value: customerNumber.trim() } : null,
-      det.itemName && itemName.trim() ? { label: t("calc.itemName"), value: itemName.trim() } : null,
-      det.productCode && productCode.trim() ? { label: t("calc.productCode"), value: productCode.trim() } : null,
-    ].filter((r): r is { label: string; value: string } => r !== null);
+  const anyDetail = det.itemName || det.productCode || det.customerName || det.customerNumber || det.customerAddress;
 
-  /** With Round off on: nearest ₹10, and the difference shown as its own row. */
-  const finish = (amount: number) => {
-    if (!state.roundOff) return { rows: [], total: formatINR(amount) };
-    const rounded = Math.round(amount / 10) * 10;
-    const diff = rounded - amount;
-    return {
-      rows: [{ label: t("calc.roundOff"), value: `${diff < 0 ? "−" : "+"} ₹ ${Math.abs(diff).toFixed(2)}` }],
-      total: formatINR(rounded),
+  /** The item in the form, or null when weight or rate is missing. */
+  const currentItem = (): EstimateItem | null => {
+    if (!hasWeight || rateVal === "") return null;
+    const rate = num(rateVal);
+    const base: EstimateItem = {
+      metal,
+      name: (det.itemName && itemName.trim()) || (mode === "sell" ? `${metalName} ${t("calc.defaultItem")}` : `${t("calc.oldItem")} ${metalName}`),
+      code: (det.productCode && productCode.trim()) || undefined,
+      net,
+      total: 0,
+      ...(grossOn ? { gross: num(gross), less: leftOn ? num(less) : 0, lessLabel: isSilver ? "Packet Wt" : "Less Wt" } : {}),
     };
+    if (mode === "sell") {
+      const price = r2(net * rate);
+      const mv = num(makingVal);
+      const making = r2(mType === "percentage" ? (price * mv) / 100 : mType === "pergram" ? net * mv : mv);
+      const oth = isSilver ? 0 : r2(num(other));
+      const gst = r2(((price + making + oth) * GST_RATE) / 100);
+      return { ...base, price, making, ...(oth ? { other: oth } : {}), gst, total: r2(price + making + oth + gst) };
+    }
+    if (isSilver) return { ...base, rate, total: r2(net * rate) }; // Silver Buy: Net × rate
+    // Gold Buy: fine gold at the 24K rate.
+    const pur = purityOn ? num(purity) : 100;
+    const fine = (net * pur) / 100;
+    const match = state.purities.find((p) => p.value === pur);
+    return {
+      ...base,
+      ...(purityOn ? { purity: `${match?.label ? match.label + "/" : ""}${pur}%` } : {}),
+      fine,
+      eq995: fine / 0.995,
+      eq999: fine / 0.999,
+      rate,
+      total: r2(fine * rate),
+    };
+  };
+
+  const addToEstimate = (it: EstimateItem, key: ListKey, fresh: boolean) => {
+    update((s) => {
+      // A new estimate keeps the customer details, which were typed for it.
+      const base: EstimateState = fresh ? { ...EMPTY_ESTIMATE, customer: s.estimate.customer } : s.estimate;
+      return { ...s, estimate: { ...base, [key]: [...base[key], it] } };
+    });
+    clearItemFields();
+    toast.success(`${it.name}: ₹${money(it.total)} · ${t("calc.itemAdded")}`);
+  };
+
+  const calculate = () => {
+    const it = currentItem();
+    if (!it) {
+      toast.error(t("calc.enterWeightAndRate"));
+      return;
+    }
+    const key: ListKey = mode === "sell" ? "items" : "old";
+    if (state.estimate.no !== null) setPending({ it, key });
+    else addToEstimate(it, key, false);
   };
 
   const switchMode = (m: Mode) => {
     setMode(m);
     setRateIn(null); // each mode shows its own saved rate
-    setBill(null);
-  };
-
-  const calculate = () => {
-    if (!hasWeight || rateVal === "") return;
-    const rate = num(rateVal);
-    if (mode === "sell") {
-      const price = net * rate;
-      const mv = num(makingVal);
-      const making = mType === "percentage" ? (price * mv) / 100 : mType === "pergram" ? net * mv : mv;
-      const oth = isSilver ? 0 : num(other);
-      const subtotal = price + making + oth;
-      const gst = (subtotal * GST_RATE) / 100;
-      const end = finish(subtotal + gst);
-      setBill({
-        title: isSilver ? t("calc.silverEstimate") : t("calc.goldEstimate"),
-        details: detailRows(),
-        rows: [
-          { label: `${t("calc.netWeight")}`, value: grams(net) },
-          { label: `${metalName} ${t("calc.price")}`, value: rupees(price) },
-          { label: `${t("calc.making")} (${makingText(mType, mv)})`, value: rupees(making) },
-          ...(isSilver ? [] : [{ label: t("calc.otherCharges"), value: rupees(oth) }]),
-          { label: t("gold.receipt.subtotal"), value: rupees(subtotal) },
-          { label: t("gold.receipt.gst"), value: rupees(gst) },
-          ...end.rows,
-        ],
-        totalLabel: t("gold.receipt.total"),
-        total: end.total,
-      });
-    } else if (isSilver) {
-      // Silver bought from a customer: Net weight × Silver Buy rate.
-      const end = finish(net * rate);
-      setBill({
-        title: t("calc.oldSilverTitle"),
-        details: detailRows(),
-        rows: [{ label: t("calc.netWeight"), value: grams(net) }, { label: rateLabel, value: rupees(rate) }, ...end.rows],
-        totalLabel: t("calc.amountToPay"),
-        total: end.total,
-      });
-    } else {
-      // Old gold bought from a customer. The rate is the 24K rate per gram.
-      const pur = purityOn ? num(purity) : 100;
-      const fine = (net * pur) / 100;
-      const match = state.purities.find((p) => p.value === pur);
-      const end = finish(fine * rate);
-      setBill({
-        title: t("calc.oldGoldTitle"),
-        details: detailRows(),
-        rows: [
-          { label: t("calc.netWeight"), value: grams(net) },
-          { label: t("calc.purity"), value: `${match?.label ? match.label + " - " : ""}${pur}%` },
-          { label: t("calc.fineGold"), value: grams(fine) },
-          { label: t("calc.eq995"), value: grams(fine / 0.995) },
-          { label: t("calc.eq999"), value: grams(fine / 0.999) },
-          { label: rateLabel, value: rupees(rate) },
-          ...end.rows,
-        ],
-        totalLabel: t("calc.amountToPay"),
-        total: end.total,
-      });
-    }
   };
 
   const showForm = true;
@@ -320,7 +309,7 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
               ) : null}
               {det.customerName ? (
                 <Field id={`${metal}-cname`} label={t("calc.customerName")}>
-                  <input id={`${metal}-cname`} autoComplete="name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={inputCls} />
+                  <input id={`${metal}-cname`} autoComplete="name" value={customer.name} onChange={(e) => setCustomer("name", e.target.value)} className={inputCls} />
                 </Field>
               ) : null}
               {det.customerNumber ? (
@@ -330,10 +319,15 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
-                    value={customerNumber}
-                    onChange={(e) => setCustomerNumber(e.target.value.replace(/[^0-9+ ]/g, ""))}
+                    value={customer.number}
+                    onChange={(e) => setCustomer("number", e.target.value.replace(/[^0-9+ ]/g, ""))}
                     className={inputCls}
                   />
+                </Field>
+              ) : null}
+              {det.customerAddress ? (
+                <Field id={`${metal}-caddr`} label={t("calc.customerAddress")} className="col-span-2">
+                  <input id={`${metal}-caddr`} autoComplete="street-address" value={customer.address} onChange={(e) => setCustomer("address", e.target.value)} className={inputCls} />
                 </Field>
               ) : null}
             </div>
@@ -350,11 +344,37 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
         </section>
       )}
 
-      {bill && showForm ? (
-        <>
-          <BillCard bill={bill} />
-          <ResultActions bill={bill} />
-        </>
+      {pending ? (
+        <Modal
+          title={`${t("estimate.title")} No: ${state.estimate.no}`}
+          onClose={() => setPending(null)}
+          footer={
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  addToEstimate(pending.it, pending.key, true);
+                  setPending(null);
+                }}
+                className="h-12 rounded-lg border border-purple-300 text-[15px] font-semibold text-purple-800"
+              >
+                {t("estimate.new")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  addToEstimate(pending.it, pending.key, false);
+                  setPending(null);
+                }}
+                className={primaryBtnCls}
+              >
+                {t("calc.addToIt")}
+              </button>
+            </div>
+          }
+        >
+          <p className="text-sm leading-relaxed text-gray-700">{t("calc.alreadyPrinted")}</p>
+        </Modal>
       ) : null}
 
       {dialog === "rate" ? (
@@ -387,33 +407,6 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
     </div>
   );
 };
-
-const BillCard: React.FC<{ bill: Bill }> = ({ bill }) => (
-  <section className="flex flex-col gap-2.5 rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 px-5 pb-4 pt-3 text-sm shadow-lg">
-    <h2 className="bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-center text-xl font-bold text-transparent">{bill.title}</h2>
-    {bill.details?.length ? (
-      <div className="flex flex-col gap-1 rounded-md bg-white/70 px-3 py-2">
-        {bill.details.map((d) => (
-          <div key={d.label} className="flex justify-between gap-3">
-            <span className="text-gray-600">{d.label}</span>
-            <span className="truncate font-medium text-gray-900">{d.value}</span>
-          </div>
-        ))}
-      </div>
-    ) : null}
-    {bill.rows.map((r) => (
-      <div key={r.label} className="flex justify-between gap-3 px-1">
-        <span className="text-gray-600">{r.label}</span>
-        <span className="whitespace-nowrap text-purple-700">{r.value}</span>
-      </div>
-    ))}
-    <div className="h-0.5 rounded-full bg-gradient-to-r from-purple-200 to-pink-200" />
-    <div className="flex justify-between rounded-md bg-gradient-to-r from-purple-200 via-pink-200 to-rose-200 p-3 font-bold text-purple-900">
-      <span>{bill.totalLabel}</span>
-      <span>₹ {bill.total}</span>
-    </div>
-  </section>
-);
 
 const RateDialog: React.FC<{
   title: string;

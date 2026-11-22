@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
+import type { EstimateItem, PrintLayout } from "./receipt";
 
 export type Metal = "gold" | "silver";
 export type Mode = "sell" | "buy";
@@ -39,6 +40,22 @@ export interface DetailFields {
   productCode: boolean;
   customerName: boolean;
   customerNumber: boolean;
+  customerAddress: boolean;
+}
+export interface Customer {
+  name: string;
+  number: string;
+  address: string;
+}
+/** The estimate being built. Shared by the Gold and Silver tabs and kept until "New estimate". */
+export interface EstimateState {
+  /** Items sold (Sell mode). */
+  items: EstimateItem[];
+  /** Old gold / silver bought from the customer (Buy mode): deducted from the items, or a purchase estimate on its own. */
+  old: EstimateItem[];
+  customer: Customer;
+  /** Given on the first print, share or save, so reprints keep the same number. */
+  no: number | null;
 }
 export interface SavedPrinter {
   address: string;
@@ -55,10 +72,17 @@ export interface AppState {
   roundOff: boolean;
   purities: Purity[];
   shop: ShopDetails;
+  /** Print the logo, address, phone, GSTIN, other details and footer. Off prints only the shop name, to save paper. */
+  printShopDetails: boolean;
+  /** Item cards on the estimate: Net Wt and Total only, or the full breakdown. */
+  layout: PrintLayout;
   printer: SavedPrinter | null;
   paper: PaperWidth;
   billSeq: number;
+  estimate: EstimateState;
 }
+
+export const EMPTY_ESTIMATE: EstimateState = { items: [], old: [], customer: { name: "", number: "", address: "" }, no: null };
 
 export const DEFAULT_PURITIES: Purity[] = [
   { value: 99.9, label: "24K" },
@@ -87,13 +111,16 @@ const DEFAULT_STATE: AppState = {
     "gold-buy": { grossLess: false, purity: true },
     "silver-sell": { gross: false, packet: false },
   },
-  details: { itemName: false, productCode: false, customerName: false, customerNumber: false },
+  details: { itemName: false, productCode: false, customerName: false, customerNumber: false, customerAddress: false },
   roundOff: false,
   purities: DEFAULT_PURITIES,
   shop: { name: "Pandit Jewellers", address: "", phone: "", gstin: "", other: "", footer: "Thank you! Visit again." },
+  printShopDetails: false,
+  layout: "compact",
   printer: null,
   paper: 58,
   billSeq: 1,
+  estimate: EMPTY_ESTIMATE,
 };
 
 const STORAGE_KEY = "pj-store-v1";
@@ -122,6 +149,7 @@ function load(): AppState {
       },
       details: { ...DEFAULT_STATE.details, ...saved.details },
       shop: { ...DEFAULT_STATE.shop, ...saved.shop },
+      estimate: { ...EMPTY_ESTIMATE, ...saved.estimate, customer: { ...EMPTY_ESTIMATE.customer, ...saved.estimate?.customer } },
     };
   } catch {
     return DEFAULT_STATE;
