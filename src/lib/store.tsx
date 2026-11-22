@@ -33,6 +33,13 @@ export interface FieldSettings {
   "gold-buy": { grossLess: boolean; purity: boolean };
   "silver-sell": { gross: boolean; packet: boolean };
 }
+/** Optional estimate details, shown for every metal and mode when switched on in Settings. */
+export interface DetailFields {
+  itemName: boolean;
+  productCode: boolean;
+  customerName: boolean;
+  customerNumber: boolean;
+}
 export interface SavedPrinter {
   address: string;
   name: string;
@@ -43,6 +50,9 @@ export interface AppState {
   rates: Record<RateKey, SavedRate>;
   making: Record<Metal, SavedMaking>;
   fields: FieldSettings;
+  details: DetailFields;
+  /** Round the final amount to the nearest ₹10 and show the difference as "Round off". */
+  roundOff: boolean;
   purities: Purity[];
   shop: ShopDetails;
   printer: SavedPrinter | null;
@@ -77,6 +87,8 @@ const DEFAULT_STATE: AppState = {
     "gold-buy": { grossLess: false, purity: true },
     "silver-sell": { gross: false, packet: false },
   },
+  details: { itemName: false, productCode: false, customerName: false, customerNumber: false },
+  roundOff: false,
   purities: DEFAULT_PURITIES,
   shop: { name: "Pandit Jewellers", address: "", phone: "", gstin: "", other: "", footer: "Thank you! Visit again." },
   printer: null,
@@ -108,6 +120,7 @@ function load(): AppState {
         "gold-buy": { ...DEFAULT_STATE.fields["gold-buy"], ...saved.fields?.["gold-buy"] },
         "silver-sell": { ...DEFAULT_STATE.fields["silver-sell"], ...saved.fields?.["silver-sell"] },
       },
+      details: { ...DEFAULT_STATE.details, ...saved.details },
       shop: { ...DEFAULT_STATE.shop, ...saved.shop },
     };
   } catch {

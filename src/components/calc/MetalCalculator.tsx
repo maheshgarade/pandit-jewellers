@@ -33,6 +33,10 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
   const [mTypeIn, setMTypeIn] = useState<MakingType | null>(null);
   const [other, setOther] = useState("");
   const [purity, setPurity] = useState("91.6");
+  const [itemName, setItemName] = useState("");
+  const [productCode, setProductCode] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerNumber, setCustomerNumber] = useState("");
   const [bill, setBill] = useState<Bill | null>(null);
   const [dialog, setDialog] = useState<null | "rate" | "making">(null);
 
@@ -78,7 +82,32 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
     setMTypeIn(null);
     setOther("");
     setPurity("91.6");
+    setItemName("");
+    setProductCode("");
+    setCustomerName("");
+    setCustomerNumber("");
     setBill(null);
+  };
+
+  const det = state.details;
+  const anyDetail = det.itemName || det.productCode || det.customerName || det.customerNumber;
+  const detailRows = () =>
+    [
+      det.customerName && customerName.trim() ? { label: t("calc.customerName"), value: customerName.trim() } : null,
+      det.customerNumber && customerNumber.trim() ? { label: t("calc.customerNumber"), value: customerNumber.trim() } : null,
+      det.itemName && itemName.trim() ? { label: t("calc.itemName"), value: itemName.trim() } : null,
+      det.productCode && productCode.trim() ? { label: t("calc.productCode"), value: productCode.trim() } : null,
+    ].filter((r): r is { label: string; value: string } => r !== null);
+
+  /** With Round off on: nearest ₹10, and the difference shown as its own row. */
+  const finish = (amount: number) => {
+    if (!state.roundOff) return { rows: [], total: formatINR(amount) };
+    const rounded = Math.round(amount / 10) * 10;
+    const diff = rounded - amount;
+    return {
+      rows: [{ label: t("calc.roundOff"), value: `${diff < 0 ? "−" : "+"} ₹ ${Math.abs(diff).toFixed(2)}` }],
+      total: formatINR(rounded),
+    };
   };
 
   const switchMode = (m: Mode) => {
@@ -97,8 +126,10 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
       const oth = isSilver ? 0 : num(other);
       const subtotal = price + making + oth;
       const gst = (subtotal * GST_RATE) / 100;
+      const end = finish(subtotal + gst);
       setBill({
-        title: isSilver ? t("calc.silverBill") : t("gold.receipt.title"),
+        title: isSilver ? t("calc.silverEstimate") : t("calc.goldEstimate"),
+        details: detailRows(),
         rows: [
           { label: `${t("calc.netWeight")}`, value: grams(net) },
           { label: `${metalName} ${t("calc.price")}`, value: rupees(price) },
@@ -106,17 +137,20 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
           ...(isSilver ? [] : [{ label: t("calc.otherCharges"), value: rupees(oth) }]),
           { label: t("gold.receipt.subtotal"), value: rupees(subtotal) },
           { label: t("gold.receipt.gst"), value: rupees(gst) },
+          ...end.rows,
         ],
         totalLabel: t("gold.receipt.total"),
-        total: formatINR(subtotal + gst),
+        total: end.total,
       });
     } else {
       // Old gold bought from a customer. The rate is the 24K rate per gram.
       const pur = purityOn ? num(purity) : 100;
       const fine = (net * pur) / 100;
       const match = state.purities.find((p) => p.value === pur);
+      const end = finish(fine * rate);
       setBill({
         title: t("calc.oldGoldTitle"),
+        details: detailRows(),
         rows: [
           { label: t("calc.netWeight"), value: grams(net) },
           { label: t("calc.purity"), value: `${match?.label ? match.label + " - " : ""}${pur}%` },
@@ -124,9 +158,10 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
           { label: t("calc.eq995"), value: grams(fine / 0.995) },
           { label: t("calc.eq999"), value: grams(fine / 0.999) },
           { label: rateLabel, value: rupees(rate) },
+          ...end.rows,
         ],
         totalLabel: t("calc.amountToPay"),
-        total: formatINR(fine * rate),
+        total: end.total,
       });
     }
   };
@@ -255,6 +290,45 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
             </div>
           ) : null}
 
+          {anyDetail ? (
+            <div className="grid grid-cols-2 gap-4 border-t border-purple-100 pt-4">
+              {det.itemName ? (
+                <Field id={`${metal}-item`} label={t("calc.itemName")}>
+                  <input id={`${metal}-item`} value={itemName} onChange={(e) => setItemName(e.target.value)} className={inputCls} />
+                </Field>
+              ) : null}
+              {det.productCode ? (
+                <Field id={`${metal}-code`} label={t("calc.productCode")}>
+                  <input
+                    id={`${metal}-code`}
+                    value={productCode}
+                    autoCapitalize="characters"
+                    onChange={(e) => setProductCode(e.target.value.replace(/[^a-zA-Z0-9-]/g, "").toUpperCase())}
+                    className={inputCls}
+                  />
+                </Field>
+              ) : null}
+              {det.customerName ? (
+                <Field id={`${metal}-cname`} label={t("calc.customerName")}>
+                  <input id={`${metal}-cname`} autoComplete="name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={inputCls} />
+                </Field>
+              ) : null}
+              {det.customerNumber ? (
+                <Field id={`${metal}-cnum`} label={t("calc.customerNumber")}>
+                  <input
+                    id={`${metal}-cnum`}
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={customerNumber}
+                    onChange={(e) => setCustomerNumber(e.target.value.replace(/[^0-9+ ]/g, ""))}
+                    className={inputCls}
+                  />
+                </Field>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={reset} className={resetBtnCls}>
               {t("gold.reset")}
@@ -307,6 +381,16 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
 const BillCard: React.FC<{ bill: Bill }> = ({ bill }) => (
   <section className="flex flex-col gap-2.5 rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 px-5 pb-4 pt-3 text-sm shadow-lg">
     <h2 className="bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-center text-xl font-bold text-transparent">{bill.title}</h2>
+    {bill.details?.length ? (
+      <div className="flex flex-col gap-1 rounded-md bg-white/70 px-3 py-2">
+        {bill.details.map((d) => (
+          <div key={d.label} className="flex justify-between gap-3">
+            <span className="text-gray-600">{d.label}</span>
+            <span className="truncate font-medium text-gray-900">{d.value}</span>
+          </div>
+        ))}
+      </div>
+    ) : null}
     {bill.rows.map((r) => (
       <div key={r.label} className="flex justify-between gap-3 px-1">
         <span className="text-gray-600">{r.label}</span>

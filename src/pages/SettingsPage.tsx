@@ -4,7 +4,7 @@ import { ChevronRight, Printer as PrinterIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { inputCls, Switch } from "@/components/calc/ui";
-import { FieldSettings, purityLabel, ShopDetails, useStore } from "@/lib/store";
+import { DetailFields, FieldSettings, purityLabel, ShopDetails, useStore } from "@/lib/store";
 import { drawReceipt } from "@/lib/receipt";
 
 const Card: React.FC<{ title: string; hint?: string; children: React.ReactNode }> = ({ title, hint, children }) => (
@@ -21,7 +21,7 @@ const SHOP_FIELDS: { key: keyof ShopDetails; label: string; placeholder: string 
   { key: "phone", label: "Phone number", placeholder: "Mobile or landline" },
   { key: "gstin", label: "GSTIN", placeholder: "15-character GST number" },
   { key: "other", label: "Other details", placeholder: "e.g. BIS hallmark reg. no., email" },
-  { key: "footer", label: "Bill footer message", placeholder: "e.g. Thank you! Visit again." },
+  { key: "footer", label: "Footer message", placeholder: "e.g. Thank you! Visit again." },
 ];
 
 export default function SettingsPage() {
@@ -33,7 +33,9 @@ export default function SettingsPage() {
   const setField = <K extends keyof FieldSettings>(key: K, field: keyof FieldSettings[K]) =>
     update((s) => ({ ...s, fields: { ...s.fields, [key]: { ...s.fields[key], [field]: !s.fields[key][field] } } }));
 
-  const setShop = (key: keyof ShopDetails, value: string) => update((s) => ({ ...s, shop: { ...s.shop, [key]: value } }));
+  const setDetail = (k: keyof DetailFields) => update((s) => ({ ...s, details: { ...s.details, [k]: !s.details[k] } }));
+
+  const setShop =(key: keyof ShopDetails, value: string) => update((s) => ({ ...s, shop: { ...s.shop, [key]: value } }));
 
   const addPurity = () => {
     const v = parseFloat(newVal);
@@ -54,7 +56,7 @@ export default function SettingsPage() {
   const showPreview = async () => {
     const c = await drawReceipt(
       {
-        title: "Gold Jewelry Bill",
+        title: "Gold Jewellery Estimate",
         rows: [
           { label: "Net Weight", value: "10.000 g" },
           { label: "Gold Price", value: "₹ 0" },
@@ -87,7 +89,20 @@ export default function SettingsPage() {
           <Switch on={f["silver-sell"].packet} onToggle={() => setField("silver-sell", "packet")} label="Packet Weight" hint="Used with Gross Weight" />
         </Card>
 
-        <Card title="Shop details" hint="Printed on every bill and on the digital copy you share or download.">
+        <Card title="Estimate details" hint="Optional fields for every metal and mode. Filled-in values are printed on the estimate.">
+          <Switch on={state.details.itemName} onToggle={() => setDetail("itemName")} label="Item name" />
+          <Switch on={state.details.productCode} onToggle={() => setDetail("productCode")} label="Product code" hint="Letters and numbers" />
+          <Switch on={state.details.customerName} onToggle={() => setDetail("customerName")} label="Customer name" />
+          <Switch on={state.details.customerNumber} onToggle={() => setDetail("customerNumber")} label="Customer number" />
+          <Switch
+            on={state.roundOff}
+            onToggle={() => update((s) => ({ ...s, roundOff: !s.roundOff }))}
+            label="Round off"
+            hint="Round the final amount to the nearest ₹10"
+          />
+        </Card>
+
+        <Card title="Shop details" hint="Printed on every estimate and on the digital copy you share or download.">
           <div className="flex flex-col gap-3 px-4 pb-4">
             {SHOP_FIELDS.map((sf) => (
               <div key={sf.key} className="flex flex-col gap-1">
@@ -98,7 +113,7 @@ export default function SettingsPage() {
               </div>
             ))}
             <button type="button" onClick={showPreview} className="h-11 rounded-lg border border-purple-300 bg-purple-50 text-sm font-semibold text-purple-800">
-              Preview bill
+              Preview estimate
             </button>
           </div>
         </Card>
@@ -166,13 +181,13 @@ export default function SettingsPage() {
       {preview ? (
         <div className="fixed inset-0 z-50 flex flex-col bg-gray-900/70" onClick={() => setPreview(null)}>
           <div className="flex items-center justify-between px-4 py-3 text-white">
-            <h2 className="text-[17px] font-bold">Bill preview</h2>
+            <h2 className="text-[17px] font-bold">Estimate preview</h2>
             <button type="button" aria-label="Close" className="flex h-11 w-11 items-center justify-center">
               <X className="h-5 w-5" />
             </button>
           </div>
           <div className="flex flex-1 justify-center overflow-y-auto px-4 pb-6">
-            <img src={preview} alt="Bill preview" className="h-fit w-full max-w-[300px] rounded-sm shadow-2xl" />
+            <img src={preview} alt="Estimate preview" className="h-fit w-full max-w-[300px] rounded-sm shadow-2xl" />
           </div>
         </div>
       ) : null}

@@ -6,6 +6,8 @@ export interface BillRow {
 }
 export interface Bill {
   title: string;
+  /** Item / customer details printed above the amounts (only the filled-in ones). */
+  details?: BillRow[];
   rows: BillRow[];
   totalLabel: string;
   total: string; // already formatted, without ₹
@@ -110,15 +112,25 @@ export async function drawReceipt(bill: Bill, shop: ShopDetails, paper: PaperWid
   if (shop.other) center(shop.other, base - 2);
   dashed();
   const date = new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
-  row(`Bill #${String(billNo).padStart(4, "0")}`, date, base - 2);
+  center("ESTIMATE", Math.round(base * 1.1), true);
+  y += 2;
+  row(`Est. #${String(billNo).padStart(4, "0")}`, date, base - 2);
   y += 4;
   center(bill.title.toUpperCase(), base, true);
   dashed();
+  if (bill.details?.length) {
+    for (const d of bill.details) row(d.label, d.value, base - 2);
+    dashed();
+  }
   for (const r of bill.rows) row(r.label, r.value, base);
   dashed();
   row(bill.totalLabel, `₹ ${bill.total}`, Math.round(base * 1.2), true);
   dashed();
-  if (shop.footer) center(shop.footer, base - 2);
+  center("This is an estimate, not a tax invoice.", base - 4);
+  if (shop.footer) {
+    y += 4;
+    center(shop.footer, base - 2);
+  }
   y += pad;
 
   const out = document.createElement("canvas");
