@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { formatINR, MakingType, makingText, Metal, Mode, timeText, useStore } from "@/lib/store";
+import { formatINR, MakingType, makingText, Metal, Mode, rateKey, timeText, useStore } from "@/lib/store";
 import type { Bill } from "@/lib/receipt";
 import { useLanguage } from "@/context/LanguageContext";
 import { Field, inputCls, linkBtnCls, Modal, NumberInput, primaryBtnCls, readOnlyCls, resetBtnCls } from "./ui";
@@ -36,7 +36,7 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
   const [bill, setBill] = useState<Bill | null>(null);
   const [dialog, setDialog] = useState<null | "rate" | "making">(null);
 
-  const saved = state.rates[metal];
+  const saved = state.rates[rateKey(metal, mode)];
   const savedMaking = state.making[metal];
   const metalName = metal === "gold" ? t("calculators.gold") : t("calculators.silver");
   const rateLabel = metal === "gold" ? t("calc.goldRate") : t("calc.silverRate");
@@ -60,7 +60,7 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
     savedMaking.value !== null && ((makingIn !== null && num(makingIn) !== savedMaking.value) || (mTypeIn !== null && mTypeIn !== savedMaking.type));
 
   const saveRate = (value: number) => {
-    update((s) => ({ ...s, rates: { ...s.rates, [metal]: { rate: value, updatedAt: Date.now() } } }));
+    update((s) => ({ ...s, rates: { ...s.rates, [rateKey(metal, mode)]: { rate: value, updatedAt: Date.now() } } }));
     setRateIn(null);
   };
   const saveMaking = (type: MakingType, value: number) => {
@@ -83,6 +83,7 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
 
   const switchMode = (m: Mode) => {
     setMode(m);
+    setRateIn(null); // each mode shows its own saved rate
     setBill(null);
   };
 
@@ -183,7 +184,7 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
                 onChange={(e) => setRateIn(e.target.value)}
                 onIcon={() => setDialog("rate")}
                 iconSet={saved.rate !== null}
-                iconLabel={saved.rate !== null ? `Edit ${metal} rate` : `Set ${metal} rate`}
+                iconLabel={`${saved.rate !== null ? "Edit" : "Set"} ${metal} ${mode} rate`}
               />
               {rateOverridden ? (
                 <button type="button" className={linkBtnCls} onClick={() => saveRate(num(rateIn!))}>
@@ -274,7 +275,7 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
 
       {dialog === "rate" ? (
         <RateDialog
-          title={`${saved.rate !== null ? t("calc.update") : t("calc.set")} ${rateLabel}`}
+          title={`${saved.rate !== null ? t("calc.update") : t("calc.set")} ${metalName} ${mode === "sell" ? t("calc.sell") : t("calc.buy")} rate`}
           label={rateLabel}
           initial={saved.rate}
           updatedAt={saved.updatedAt}

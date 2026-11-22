@@ -4,6 +4,8 @@ export type Metal = "gold" | "silver";
 export type Mode = "sell" | "buy";
 export type MakingType = "percentage" | "flat" | "pergram";
 export type PaperWidth = 58 | 80;
+export type RateKey = `${Metal}-${Mode}`;
+export const rateKey = (metal: Metal, mode: Mode): RateKey => `${metal}-${mode}`;
 
 export interface SavedRate {
   rate: number | null;
@@ -37,7 +39,8 @@ export interface SavedPrinter {
 }
 
 export interface AppState {
-  rates: Record<Metal, SavedRate>;
+  /** Saved rate per metal and mode ("gold-sell", "gold-buy", …): each is set and updated on its own. */
+  rates: Record<RateKey, SavedRate>;
   making: Record<Metal, SavedMaking>;
   fields: FieldSettings;
   purities: Purity[];
@@ -62,7 +65,12 @@ export const DEFAULT_PURITIES: Purity[] = [
 ];
 
 const DEFAULT_STATE: AppState = {
-  rates: { gold: { rate: null, updatedAt: null }, silver: { rate: null, updatedAt: null } },
+  rates: {
+    "gold-sell": { rate: null, updatedAt: null },
+    "gold-buy": { rate: null, updatedAt: null },
+    "silver-sell": { rate: null, updatedAt: null },
+    "silver-buy": { rate: null, updatedAt: null },
+  },
   making: { gold: { type: "percentage", value: null }, silver: { type: "percentage", value: null } },
   fields: {
     "gold-sell": { grossLess: false },
@@ -84,10 +92,16 @@ function load(): AppState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_STATE;
     const saved = JSON.parse(raw) as Partial<AppState>;
+    // The first test build kept one rate per metal ({ gold, silver }); carry it into both Sell and Buy.
+    const old = (saved.rates ?? {}) as Partial<Record<string, SavedRate>>;
+    const rates = { ...DEFAULT_STATE.rates };
+    for (const k of Object.keys(rates) as RateKey[]) {
+      rates[k] = old[k] ?? old[k.split("-")[0]] ?? rates[k];
+    }
     return {
       ...DEFAULT_STATE,
       ...saved,
-      rates: { ...DEFAULT_STATE.rates, ...saved.rates },
+      rates,
       making: { ...DEFAULT_STATE.making, ...saved.making },
       fields: {
         "gold-sell": { ...DEFAULT_STATE.fields["gold-sell"], ...saved.fields?.["gold-sell"] },
