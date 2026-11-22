@@ -142,6 +142,16 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
         totalLabel: t("gold.receipt.total"),
         total: end.total,
       });
+    } else if (isSilver) {
+      // Silver bought from a customer: Net weight × Silver Buy rate.
+      const end = finish(net * rate);
+      setBill({
+        title: t("calc.oldSilverTitle"),
+        details: detailRows(),
+        rows: [{ label: t("calc.netWeight"), value: grams(net) }, { label: rateLabel, value: rupees(rate) }, ...end.rows],
+        totalLabel: t("calc.amountToPay"),
+        total: end.total,
+      });
     } else {
       // Old gold bought from a customer. The rate is the 24K rate per gram.
       const pur = purityOn ? num(purity) : 100;
@@ -166,7 +176,7 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
     }
   };
 
-  const showForm = !(isSilver && mode === "buy");
+  const showForm = true;
   const leftLabel = isSilver ? t("calc.packetWeight") : t("calc.lessWeight");
   const netHint = isSilver ? (leftOn ? t("calc.grossMinusPacket") : t("calc.sameAsGross")) : t("calc.grossMinusLess");
 
