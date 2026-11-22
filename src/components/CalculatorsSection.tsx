@@ -1,44 +1,38 @@
 import React from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import GoldCalculator from "./GoldCalculator";
-import SilverCalculator from "./SilverCalculator";
-import ExchangeCalculator from "./ExchangeCalculator";
+// import ExchangeCalculator from "./ExchangeCalculator"; // Exchange tab hidden for now
+import { MetalCalculator } from "./calc/MetalCalculator";
 import { useLanguage } from "../context/LanguageContext";
+
+const tabCls =
+  "h-9 data-[state=active]:bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 data-[state=active]:text-white";
 
 const CalculatorsSection: React.FC = () => {
   const { t } = useLanguage();
   return (
-    <div className="container mx-auto px-4 py-2">
+    <div className="container mx-auto max-w-md px-4 py-2">
       <Tabs defaultValue="gold" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-purple-100 to-pink-100">
-          <TabsTrigger
-            value="gold"
-            className="data-[state=active]:bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 data-[state=active]:text-white"
-          >
+        {/* Exchange tab hidden for now: restore with grid-cols-3 and the trigger/content below. */}
+        <TabsList className="grid h-11 w-full grid-cols-2 bg-gradient-to-r from-purple-100 to-pink-100">
+          <TabsTrigger value="gold" className={tabCls}>
             {t("calculators.gold")}
           </TabsTrigger>
-          <TabsTrigger
-            value="silver"
-            className="data-[state=active]:bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 data-[state=active]:text-white"
-          >
+          <TabsTrigger value="silver" className={tabCls}>
             {t("calculators.silver")}
           </TabsTrigger>
-          <TabsTrigger
-            value="mortgage"
-            className="data-[state=active]:bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400 data-[state=active]:text-white"
-          >
+          {/* <TabsTrigger value="mortgage" className={tabCls}>
             {t("calculators.mortgage")}
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
-        <TabsContent value="gold">
-          <GoldCalculator />
+        <TabsContent value="gold" className="mt-3">
+          <MetalCalculator metal="gold" />
         </TabsContent>
-        <TabsContent value="silver">
-          <SilverCalculator />
+        <TabsContent value="silver" className="mt-3">
+          <MetalCalculator metal="silver" />
         </TabsContent>
-        <TabsContent value="mortgage">
+        {/* <TabsContent value="mortgage">
           <ExchangeCalculator />
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
     </div>
   );

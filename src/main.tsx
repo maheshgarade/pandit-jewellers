@@ -12,6 +12,7 @@ import App from "./App";
 
 import ContextsProvider from "./context/ContextsProvider.tsx";
 import { LanguageProvider } from "./context/LanguageContext.tsx";
+import { StoreProvider } from "./lib/store.tsx";
 
 const queryClient = new QueryClient();
 
@@ -24,9 +25,11 @@ createRoot(document.getElementById("root")!).render(
             <Toaster />
             <Sonner />
             <ContextsProvider>
-              <BrowserRouter>
-                <App />
-              </BrowserRouter>
+              <StoreProvider>
+                <BrowserRouter>
+                  <App />
+                </BrowserRouter>
+              </StoreProvider>
             </ContextsProvider>
           </LanguageProvider>
         </TooltipProvider>

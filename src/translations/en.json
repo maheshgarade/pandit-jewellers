@@ -37,5 +37,36 @@
       "currency": "All prices are in Indian Rupees (₹)"
     }
   },
-  "comingSoon": "is currently under development. Please check back soon for this feature!"
+  "calc": {
+    "sell": "Sell",
+    "buy": "Buy",
+    "netWeight": "Net Weight (g)",
+    "grossWeight": "Gross Weight (g)",
+    "lessWeight": "Less Weight (g)",
+    "packetWeight": "Packet Weight (g)",
+    "goldRate": "Gold Rate (per gram)",
+    "silverRate": "Silver Rate (per gram)",
+    "making": "Making Charges",
+    "otherCharges": "Other Charges",
+    "purity": "Purity",
+    "enterWeight": "Enter weight",
+    "enterRate": "Enter rate",
+    "saveAsTodayRate": "Save as today's rate",
+    "useDefault": "Use default",
+    "defaultMaking": "default making",
+    "set": "Set",
+    "update": "Update",
+    "price": "Price",
+    "silverBill": "Silver Bill",
+    "oldGoldTitle": "Old Gold Purchase",
+    "fineGold": "Fine Gold (100%)",
+    "eq995": "Equivalent in 99.50",
+    "eq999": "Equivalent in 99.9",
+    "amountToPay": "Amount to Pay",
+    "grossMinusLess": "Gross − Less",
+    "grossMinusPacket": "Gross − Packet",
+    "sameAsGross": "Same as Gross",
+    "comingSoon": "Calculation coming soon."
+  },
+  "comingSoon":"is currently under development. Please check back soon for this feature!"
 }

@@ -13,7 +13,7 @@ type LanguageContextType = {
   t: (key: string) => string;
 };
 
-const translations: Record<Language, TranslationsType> = {
+const translations: Record<Language, Partial<TranslationsType>> = {
   en: enTranslations,
   hi: hiTranslations,
   mr: mrTranslations,
@@ -42,21 +42,19 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("language", language);
   }, [language]);
 
-  // Translation function
-  const t = (key: string): string => {
-    const keys = key.split(".");
-    let result: TranslationsType | string = translations[language];
-
-    for (const k of keys) {
-      if (result && result[k] !== undefined) {
-        result = result[k];
+  // Translation function: the chosen language, else English, else the key itself.
+  const lookup = (lang: Language, key: string): string | undefined => {
+    let result: unknown = translations[lang];
+    for (const k of key.split(".")) {
+      if (result && typeof result === "object" && (result as Record<string, unknown>)[k] !== undefined) {
+        result = (result as Record<string, unknown>)[k];
       } else {
-        return key; // Return the key if translation is not found
+        return undefined;
       }
     }
-
-    return result?.toString() || key;
+    return typeof result === "string" ? result : undefined;
   };
+  const t = (key: string): string => lookup(language, key) ?? lookup("en", key) ?? key;
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>
