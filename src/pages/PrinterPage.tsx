@@ -7,6 +7,7 @@ import Layout from "@/components/Layout";
 import { useStore } from "@/lib/store";
 import { bytesToBase64, canvasToEscPos, drawTestPrint } from "@/lib/receipt";
 import { FoundDevice, isNative, Printer, printerError } from "@/lib/printer";
+import { tr, useLanguage } from "@/context/LanguageContext";
 
 const SCAN_MS = 15_000;
 
@@ -28,6 +29,7 @@ const actionCls = "h-10 min-w-[84px] rounded-lg bg-purple-100 px-3 text-sm font-
 /** Connect Printer (Bluetooth), modelled on RestoBill: scans on open, Paired / Found lists, pair + test print. */
 export default function PrinterPage() {
   const { state, update } = useStore();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [scanning, setScanning] = useState(false);
   const [bonded, setBonded] = useState<FoundDevice[]>([]);
@@ -47,7 +49,7 @@ export default function PrinterPage() {
 
   const scan = useCallback(async () => {
     if (!isNative()) {
-      toast.info("Bluetooth printers can be connected in the Android app.");
+      toast.info(tr("printer.androidOnly"));
       return;
     }
     stop();
@@ -75,9 +77,9 @@ export default function PrinterPage() {
 
   const testPrint = async (address: string, name: string) => {
     const canvas = drawTestPrint(state.shop.name, state.paper, [
-      ["Test print", "OK"],
-      ["Printer", name],
-      ["Paper", state.paper === 58 ? "2 inch" : "3 inch"],
+      [t("printer.testPrint"), "OK"],
+      [t("settings.printer"), name],
+      [t("printer.paper"), state.paper === 58 ? t("settings.inch2") : t("settings.inch3")],
     ]);
     await Printer.write({ address, data: bytesToBase64(canvasToEscPos(canvas)) });
   };
@@ -91,12 +93,12 @@ export default function PrinterPage() {
         const { value } = await Printer.pair({ address: d.id });
         setPairing(null);
         if (!value) {
-          toast.error("Pairing did not finish. Check the PIN (often 0000 or 1234) and try again.");
+          toast.error(t("printer.pairFailed"));
           return;
         }
       }
       update((s) => ({ ...s, printer: { address: d.id, name: d.name } }));
-      toast.success(`Connected to ${d.name}`);
+      toast.success(t("printer.connectedTo", { name: d.name }));
       await testPrint(d.id, d.name);
       navigate("/settings");
     } catch (e) {
@@ -113,7 +115,7 @@ export default function PrinterPage() {
     try {
       await Printer.ensureReady();
       await testPrint(state.printer.address, state.printer.name);
-      toast.success("Test print sent");
+      toast.success(t("printer.testSent"));
     } catch (e) {
       toast.error(printerError(e));
     } finally {
@@ -128,34 +130,34 @@ export default function PrinterPage() {
   return (
     <Layout>
       <div className="container mx-auto flex max-w-md flex-col gap-2 px-4 py-4">
-        <h1 className="text-xl font-bold text-purple-900">Connect printer</h1>
+        <h1 className="text-xl font-bold text-purple-900">{t("print.connectPrinter")}</h1>
 
         {scanning ? (
           <div className="flex items-center gap-3 py-1">
             <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
               <Loader2 className="h-5 w-5 animate-spin text-purple-700" />
             </span>
-            <span className="text-[15px] text-purple-700">Searching for printers…</span>
+            <span className="text-[15px] text-purple-700">{t("printer.searching")}</span>
           </div>
         ) : null}
 
         {pairing ? (
           <div className="rounded-xl border border-purple-400 bg-purple-50 p-4 text-sm">
-            <p className="font-bold text-gray-900">Pairing with {pairing}</p>
-            <p className="mt-1 text-gray-700">Type the printer PIN in the box Android shows. It is usually 0000 or 1234, or printed on the printer.</p>
+            <p className="font-bold text-gray-900">{t("printer.pairingWith", { name: pairing })}</p>
+            <p className="mt-1 text-gray-700">{t("printer.pinHint")}</p>
           </div>
         ) : null}
 
-        <h2 className="mt-2 text-base font-bold text-gray-900">Paired printers</h2>
-        {!state.printer && newBonded.length === 0 ? <p className="py-1 text-sm text-gray-500">No paired printer yet.</p> : null}
+        <h2 className="mt-2 text-base font-bold text-gray-900">{t("printer.paired")}</h2>
+        {!state.printer && newBonded.length === 0 ? <p className="py-1 text-sm text-gray-600">{t("printer.noPaired")}</p> : null}
         {state.printer ? (
-          <Row name={state.printer.name} sub="Connected" subCls="text-green-700">
+          <Row name={state.printer.name} sub={t("printer.connected")} subCls="text-green-700">
             <button type="button" className={actionCls} disabled={!!busy} onClick={runTest}>
-              {busy === state.printer.address ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : "Test print"}
+              {busy === state.printer.address ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : t("printer.testPrint")}
             </button>
             <button
               type="button"
-              aria-label="Remove printer"
+              aria-label={t("printer.remove")}
               onClick={() => update((s) => ({ ...s, printer: null }))}
               className="flex h-10 w-10 items-center justify-center text-red-600"
             >
@@ -166,29 +168,29 @@ export default function PrinterPage() {
         {newBonded.map((d) => (
           <Row key={d.id} name={d.name}>
             <button type="button" className={actionCls} disabled={!!busy} onClick={() => connect(d, false)}>
-              {busy === d.id ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : "Connect"}
+              {busy === d.id ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : t("print.connect")}
             </button>
           </Row>
         ))}
 
-        <h2 className="mt-4 text-base font-bold text-gray-900">Printers found</h2>
-        {newFound.length === 0 && !scanning ? <p className="py-1 text-sm text-gray-500">Turn the printer on and keep it near the phone, then scan again.</p> : null}
+        <h2 className="mt-4 text-base font-bold text-gray-900">{t("printer.found")}</h2>
+        {newFound.length === 0 && !scanning ? <p className="py-1 text-sm text-gray-600">{t("printer.turnOn")}</p> : null}
         {newFound.map((d) => (
-          <Row key={d.id} name={d.name} sub="Not paired yet">
+          <Row key={d.id} name={d.name} sub={t("printer.notPaired")}>
             <button type="button" className={actionCls} disabled={!!busy} onClick={() => connect(d, true)}>
-              {busy === d.id ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : "Pair"}
+              {busy === d.id ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : t("printer.pair")}
             </button>
           </Row>
         ))}
 
         <button type="button" onClick={() => isNative() && Printer.openBluetoothSettings()} className="mt-2 self-start text-sm font-semibold text-purple-700 underline">
-          Pair in phone Bluetooth settings instead
+          {t("printer.pairInSettings")}
         </button>
       </div>
 
       <div className="sticky bottom-0 border-t border-purple-200 bg-white px-4 pb-5 pt-3">
         <button type="button" disabled={scanning || !!busy} onClick={scan} className="h-12 w-full rounded-lg bg-purple-100 text-[15px] font-semibold text-purple-800 disabled:opacity-50">
-          Scan for new printers
+          {t("printer.scan")}
         </button>
       </div>
     </Layout>

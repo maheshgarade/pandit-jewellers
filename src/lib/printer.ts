@@ -1,4 +1,5 @@
 import { Capacitor, registerPlugin, type PluginListenerHandle } from "@capacitor/core";
+import { tr } from "@/context/LanguageContext";
 
 export interface FoundDevice {
   id: string;
@@ -29,16 +30,16 @@ export function printerError(e: unknown): string {
   const code = (e as { code?: string })?.code;
   switch (code) {
     case "permission":
-      return "Allow Bluetooth permission for the app to use the printer.";
+      return tr("errors.permission");
     case "bluetooth-off":
-      return "Bluetooth is off. Turn it on and try again.";
+      return tr("errors.bluetoothOff");
     case "unreachable":
-      return "Could not reach the printer. Make sure it is on and near the phone.";
+      return tr("errors.unreachable");
     case "no-whatsapp":
-      return "WhatsApp is not installed on this phone.";
+      return tr("errors.noWhatsapp");
     case "unsupported":
-      return "This phone has no Bluetooth.";
+      return tr("errors.noBluetooth");
     default:
-      return (e as Error)?.message || "Something went wrong.";
+      return (e as Error)?.message || tr("errors.generic");
   }
 }

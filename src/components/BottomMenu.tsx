@@ -18,7 +18,7 @@ const BottomMenu: React.FC<{ activePage: string }> = ({ activePage }) => {
   ];
 
   return (
-    <nav aria-label="Main" className="fixed bottom-0 left-0 right-0 z-30 border-t border-purple-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-lg">
+    <nav aria-label={t("menu.main")} className="fixed bottom-0 left-0 right-0 z-30 border-t border-purple-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-lg">
       <div className="flex h-16 items-center justify-around">
         {menuItems.map((item) => {
           const isActive = activePage === item.path;
@@ -34,7 +34,7 @@ const BottomMenu: React.FC<{ activePage: string }> = ({ activePage }) => {
                 {item.badge ? (
                   <span className="absolute -right-3 -top-2 min-w-[18px] rounded-full bg-rose-600 px-1 text-center text-[11px] font-bold leading-[18px] text-white">
                     {item.badge}
-                    <span className="sr-only"> items</span>
+                    <span className="sr-only"> {t("customers.items")}</span>
                   </span>
                 ) : null}
               </span>

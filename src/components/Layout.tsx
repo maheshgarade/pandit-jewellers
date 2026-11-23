@@ -2,6 +2,7 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import Header from "./Header";
 import BottomMenu, { MAIN_PATHS } from "./BottomMenu";
+import { QuickActions } from "./QuickActions";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-purple-50 via-white to-pink-50">
       <Header />
       <main className={`flex-1 ${tabs ? "pb-24" : "pb-6"}`}>{children}</main>
+      {tabs ? <QuickActions /> : null}
       {tabs ? <BottomMenu activePage={pathname} /> : null}
     </div>
   );

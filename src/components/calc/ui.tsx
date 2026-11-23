@@ -1,5 +1,6 @@
 import React, { ReactNode } from "react";
 import { Pencil, Plus, X } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export const labelCls = "text-sm font-medium text-purple-800";
 export const inputCls =
@@ -33,7 +34,9 @@ export const NumberInput: React.FC<
   </div>
 );
 
-export const Modal: React.FC<{ title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }> = ({ title, onClose, children, footer }) => (
+export const Modal: React.FC<{ title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }> = ({ title, onClose, children, footer }) => {
+  const closeLabel = useLanguage().t("common.close");
+  return (
   <div className="fixed inset-0 z-50 flex items-start justify-center bg-gray-900/45 px-6 pt-40" onClick={onClose}>
     <section
       role="dialog"
@@ -44,7 +47,7 @@ export const Modal: React.FC<{ title: string; onClose: () => void; children: Rea
     >
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-purple-900">{title}</h2>
-        <button type="button" onClick={onClose} aria-label="Close" className="-mr-2 flex h-10 w-10 items-center justify-center text-gray-500">
+        <button type="button" onClick={onClose} aria-label={closeLabel} className="-mr-2 flex h-10 w-10 items-center justify-center text-gray-500">
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -52,7 +55,8 @@ export const Modal: React.FC<{ title: string; onClose: () => void; children: Rea
       {footer}
     </section>
   </div>
-);
+  );
+};
 
 export const Switch: React.FC<{ on: boolean; onToggle: () => void; label: string; hint?: string }> = ({ on, onToggle, label, hint }) => (
   <button

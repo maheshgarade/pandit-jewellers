@@ -7,6 +7,7 @@ import Layout from "@/components/Layout";
 import { inputCls, Switch } from "@/components/calc/ui";
 import { DetailFields, EstimateState, FieldSettings, purityLabel, ShopDetails, useStore } from "@/lib/store";
 import { buildEstimate, drawEstimate } from "@/lib/receipt";
+import { useLanguage } from "@/context/LanguageContext";
 
 /** One expandable group of settings. Collapsed, it shows a one-line summary of what is set. */
 const Section: React.FC<{
@@ -65,14 +66,8 @@ function Choice<T extends string | number>({ label, value, options, onPick }: { 
   );
 }
 
-const SHOP_FIELDS: { key: keyof ShopDetails; label: string; placeholder: string }[] = [
-  { key: "name", label: "Shop name", placeholder: "e.g. Pandit Jewellers" },
-  { key: "address", label: "Address", placeholder: "Street, city, PIN" },
-  { key: "phone", label: "Phone number", placeholder: "Mobile or landline" },
-  { key: "gstin", label: "GSTIN", placeholder: "15-character GST number" },
-  { key: "other", label: "Other details", placeholder: "e.g. BIS hallmark reg. no., email" },
-  { key: "footer", label: "Footer message", placeholder: "e.g. Thank you! Visit again." },
-];
+/** Shop fields; their label and placeholder texts are settings.shop.<key> and settings.shop.<key>Ph. */
+const SHOP_FIELDS: (keyof ShopDetails)[] = ["name", "address", "phone", "gstin", "other", "footer"];
 
 /** A made-up estimate for the Settings preview. */
 const SAMPLE: EstimateState = {
@@ -85,12 +80,12 @@ const SAMPLE: EstimateState = {
   no: null,
 };
 
-const onOff = (b: boolean) => (b ? "on" : "off");
 
 export default function SettingsPage() {
   const { state, update } = useStore();
+  const { t } = useLanguage();
+  const onOff = (b: boolean) => (b ? t("settings.on") : t("settings.off"));
   const [open, setOpen] = useState<string | null>(null);
-  const [newName, setNewName] = useState("");
   const [newVal, setNewVal] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const toggle = (id: string) => setOpen((o) => (o === id ? null : id));
@@ -113,17 +108,17 @@ export default function SettingsPage() {
   const addPurity = () => {
     const v = parseFloat(newVal);
     if (isNaN(v) || v <= 0 || v > 100) {
-      toast.error("Enter a purity between 0 and 100.");
+      toast.error(t("settings.purityRange"));
       return;
     }
     if (state.purities.some((p) => p.value === v)) {
-      toast.error(`${v}% is already in the list.`);
+      toast.error(t("settings.purityExists", { v }));
       return;
     }
-    update((s) => ({ ...s, purities: [...s.purities, { value: v, label: newName.trim(), custom: true }] }));
-    setNewName("");
+    // Custom purities have no karat: they show as the percentage only (e.g. 98.5%).
+    update((s) => ({ ...s, purities: [...s.purities, { value: v, label: "", custom: true }] }));
     setNewVal("");
-    toast.success(`Added ${v}% to the Purity list`);
+    toast.success(t("settings.purityAdded", { v }));
   };
 
   const showPreview = async () => {
@@ -133,93 +128,93 @@ export default function SettingsPage() {
   };
 
   const f = state.fields;
-  const paper = state.paper === 58 ? "2 inch" : "3 inch";
+  const paper = state.paper === 58 ? t("settings.inch2") : t("settings.inch3");
   const fieldsOn = [
-    f["gold-sell"].grossLess && "Gold Sell gross/less",
-    f["gold-buy"].grossLess && "Gold Buy gross/less",
-    f["gold-buy"].purity && "Purity",
-    f["silver-sell"].gross && "Silver gross",
-    state.details.itemName && "Item name",
-    state.details.productCode && "Product code",
+    f["gold-sell"].grossLess && t("settings.sumGoldSellGross"),
+    f["gold-buy"].grossLess && t("settings.sumGoldBuyGross"),
+    f["gold-buy"].purity && t("calc.purity"),
+    f["silver-sell"].gross && t("settings.sumSilverGross"),
+    state.details.itemName && t("calc.itemName"),
+    state.details.productCode && t("calc.productCode"),
   ].filter(Boolean);
 
   return (
     <Layout>
       <div className="container mx-auto flex max-w-md flex-col gap-3 px-4 py-4">
-        <h1 className="text-xl font-bold text-purple-900">Settings</h1>
+        <h1 className="text-xl font-bold text-purple-900">{t("settings.title")}</h1>
 
-        <Section id="profile" icon={UserRound} title="Profile" summary={state.salesman ? `Salesman: ${state.salesman}` : "Add your name"} open={open === "profile"} onToggle={() => toggle("profile")}>
-          <Hint>Your name prints at the bottom of each estimate as “Salesman: name”.</Hint>
+        <Section id="profile" icon={UserRound} title={t("settings.profile")} summary={state.salesman ? `${t("print.salesman")}: ${state.salesman}` : t("settings.addName")} open={open === "profile"} onToggle={() => toggle("profile")}>
+          <Hint>{t("settings.profileHint")}</Hint>
           <div className="flex flex-col gap-1 px-4 pb-4">
             <label htmlFor="profile-name" className="text-[13px] font-medium text-purple-800">
-              Your name
+              {t("settings.yourName")}
             </label>
-            <input id="profile-name" autoComplete="name" value={state.salesman} placeholder="e.g. Prasad" onChange={(e) => update((s) => ({ ...s, salesman: e.target.value }))} className={inputCls} />
+            <input id="profile-name" autoComplete="name" value={state.salesman} placeholder={t("settings.yourNamePh")} onChange={(e) => update((s) => ({ ...s, salesman: e.target.value }))} className={inputCls} />
           </div>
         </Section>
 
-        <Section id="printer" icon={PrinterIcon} title="Printer" summary={`${state.printer?.name ?? "No printer"} · ${paper} paper`} open={open === "printer"} onToggle={() => toggle("printer")}>
+        <Section id="printer" icon={PrinterIcon} title={t("settings.printer")} summary={`${state.printer?.name ?? t("settings.noPrinter")} · ${paper}`} open={open === "printer"} onToggle={() => toggle("printer")}>
           <Link to="/settings/printer" className="flex min-h-16 items-center gap-3 px-4 py-2">
             <span className="flex flex-1 flex-col">
-              <span className="text-[15px] text-gray-900">{state.printer?.name ?? "No printer connected"}</span>
-              <span className="text-xs text-gray-600">{state.printer ? "Bluetooth · ready to print" : "Tap to find a Bluetooth printer"}</span>
+              <span className="text-[15px] text-gray-900">{state.printer?.name ?? t("print.noPrinter")}</span>
+              <span className="text-xs text-gray-600">{state.printer ? t("settings.printerReady") : t("settings.printerFind")}</span>
             </span>
-            <span className="text-sm font-semibold text-purple-700">{state.printer ? "Change" : "Connect"}</span>
+            <span className="text-sm font-semibold text-purple-700">{state.printer ? t("print.change") : t("print.connect")}</span>
             <ChevronRight className="h-4 w-4 text-purple-700" aria-hidden="true" />
           </Link>
-          <Sub>Paper size</Sub>
+          <Sub>{t("settings.paperSize")}</Sub>
           <Choice
-            label="Paper size"
+            label={t("settings.paperSize")}
             value={state.paper}
             onPick={(p) => update((s) => ({ ...s, paper: p }))}
             options={[
-              { value: 58, title: "2 inch", hint: "58 mm paper" },
-              { value: 80, title: "3 inch", hint: "80 mm paper" },
+              { value: 58, title: t("settings.inch2"), hint: t("settings.mm58") },
+              { value: 80, title: t("settings.inch3"), hint: t("settings.mm80") },
             ]}
           />
-          <Hint>The printer is released about 20 seconds after each print, so other apps and phones can use it.</Hint>
+          <Hint>{t("settings.printerRelease")}</Hint>
         </Section>
 
         <Section
           id="print"
           icon={FileText}
-          title="Estimate print"
-          summary={`${state.layout === "compact" ? "Compact" : "Detailed"} cards · shop details ${onOff(state.printShopDetails)}`}
+          title={t("settings.estimatePrint")}
+          summary={`${state.layout === "compact" ? t("settings.compact") : t("settings.detailed")} · ${t("settings.shopDetails")} ${onOff(state.printShopDetails)}`}
           open={open === "print"}
           onToggle={() => toggle("print")}
         >
-          <Sub>Item cards</Sub>
+          <Sub>{t("settings.itemCards")}</Sub>
           <Choice
-            label="Item cards"
+            label={t("settings.itemCards")}
             value={state.layout}
             onPick={(l) => update((s) => ({ ...s, layout: l }))}
             options={[
-              { value: "compact", title: "Compact", hint: "Net Wt and Total" },
-              { value: "detailed", title: "Detailed", hint: "Weights, metal, making, GST" },
+              { value: "compact", title: t("settings.compact"), hint: t("settings.compactHint") },
+              { value: "detailed", title: t("settings.detailed"), hint: t("settings.detailedHint") },
             ]}
           />
           <Switch
             on={state.printShopDetails}
             onToggle={() => update((s) => ({ ...s, printShopDetails: !s.printShopDetails }))}
-            label="Shop details"
-            hint="Logo, address, phone, GSTIN, other details and footer. Off prints only the shop name, to save paper."
+            label={t("settings.shopDetails")}
+            hint={t("settings.shopDetailsHint")}
           />
           <div className="px-4 pb-4 pt-2">
             <button type="button" onClick={showPreview} className="h-11 w-full rounded-lg border border-purple-300 bg-purple-50 text-sm font-semibold text-purple-800">
-              Preview estimate
+              {t("settings.preview")}
             </button>
           </div>
         </Section>
 
-        <Section id="shop" icon={Store} title="Shop details" summary={state.shop.name || "Not set"} open={open === "shop"} onToggle={() => toggle("shop")}>
-          <Hint>The shop name prints on every estimate. The rest prints when Shop details is on under Estimate print.</Hint>
+        <Section id="shop" icon={Store} title={t("settings.shopDetails")} summary={state.shop.name || t("settings.notSet")} open={open === "shop"} onToggle={() => toggle("shop")}>
+          <Hint>{t("settings.shopHint")}</Hint>
           <div className="flex flex-col gap-3 px-4 pb-4">
-            {SHOP_FIELDS.map((sf) => (
-              <div key={sf.key} className="flex flex-col gap-1">
-                <label htmlFor={`shop-${sf.key}`} className="text-[13px] font-medium text-purple-800">
-                  {sf.label}
+            {SHOP_FIELDS.map((key) => (
+              <div key={key} className="flex flex-col gap-1">
+                <label htmlFor={`shop-${key}`} className="text-[13px] font-medium text-purple-800">
+                  {t(`settings.shop.${key}`)}
                 </label>
-                <input id={`shop-${sf.key}`} value={state.shop[sf.key]} placeholder={sf.placeholder} onChange={(e) => setShop(sf.key, e.target.value)} className={inputCls} />
+                <input id={`shop-${key}`} value={state.shop[key]} placeholder={t(`settings.shop.${key}Ph`)} onChange={(e) => setShop(key, e.target.value)} className={inputCls} />
               </div>
             ))}
           </div>
@@ -228,59 +223,59 @@ export default function SettingsPage() {
         <Section
           id="rates"
           icon={IndianRupee}
-          title="Rates & totals"
-          summary={`Rate ${state.rateUnit === 1 ? "per gram" : "per 10 gram"} · round off ${onOff(state.roundOff)}`}
+          title={t("settings.rates")}
+          summary={`${state.rateUnit === 1 ? t("settings.perGram") : t("settings.per10")} · ${t("calc.roundOff")} ${onOff(state.roundOff)}`}
           open={open === "rates"}
           onToggle={() => toggle("rates")}
         >
-          <Sub>Rate unit</Sub>
+          <Sub>{t("settings.rateUnit")}</Sub>
           <Choice
-            label="Rate unit"
+            label={t("settings.rateUnit")}
             value={state.rateUnit}
             onPick={setRateUnit}
             options={[
-              { value: 1, title: "Per gram", hint: "e.g. ₹6,850 / g" },
-              { value: 10, title: "Per 10 gram", hint: "e.g. ₹68,500 / 10 g" },
+              { value: 1, title: t("settings.perGram"), hint: t("settings.perGramHint") },
+              { value: 10, title: t("settings.per10"), hint: t("settings.per10Hint") },
             ]}
           />
-          <Switch on={state.roundOff} onToggle={() => update((s) => ({ ...s, roundOff: !s.roundOff }))} label="Round off" hint="Round the final amount to the nearest ₹10" />
+          <Switch on={state.roundOff} onToggle={() => update((s) => ({ ...s, roundOff: !s.roundOff }))} label={t("calc.roundOff")} hint={t("settings.roundOffHint")} />
         </Section>
 
         <Section
           id="fields"
           icon={Calculator}
-          title="Calculator fields"
-          summary={fieldsOn.length ? fieldsOn.join(", ") : "Only the basic fields"}
+          title={t("settings.fields")}
+          summary={fieldsOn.length ? fieldsOn.join(", ") : t("settings.basicFields")}
           open={open === "fields"}
           onToggle={() => toggle("fields")}
         >
-          <Hint>Extra fields for each metal and mode. The Estimate tab always has item name, product code and customer details.</Hint>
-          <Sub>Gold · Sell</Sub>
-          <Switch on={f["gold-sell"].grossLess} onToggle={() => setField("gold-sell", "grossLess")} label="Gross & Less Weight" hint="Net = Gross − Less" />
-          <Sub>Gold · Buy</Sub>
-          <Switch on={f["gold-buy"].grossLess} onToggle={() => setField("gold-buy", "grossLess")} label="Gross & Less Weight" hint="Net = Gross − Less" />
-          <Switch on={f["gold-buy"].purity} onToggle={() => setField("gold-buy", "purity")} label="Purity" hint="Fine gold = Net × Purity %" />
-          <Sub>Silver · Sell</Sub>
-          <Switch on={f["silver-sell"].gross} onToggle={() => setField("silver-sell", "gross")} label="Gross Weight" hint="Net = Gross − Packet" />
-          <Switch on={f["silver-sell"].packet} onToggle={() => setField("silver-sell", "packet")} label="Packet Weight" hint="Used with Gross Weight" />
-          <Sub>Calculator tab</Sub>
-          <Switch on={state.details.itemName} onToggle={() => setDetail("itemName")} label="Item name" />
-          <Switch on={state.details.productCode} onToggle={() => setDetail("productCode")} label="Product code" hint="Letters and numbers" />
+          <Hint>{t("settings.fieldsHint")}</Hint>
+          <Sub>{`${t("calculators.gold")} · ${t("calc.sell")}`}</Sub>
+          <Switch on={f["gold-sell"].grossLess} onToggle={() => setField("gold-sell", "grossLess")} label={t("settings.grossLess")} hint={t("settings.grossLessHint")} />
+          <Sub>{`${t("calculators.gold")} · ${t("calc.buy")}`}</Sub>
+          <Switch on={f["gold-buy"].grossLess} onToggle={() => setField("gold-buy", "grossLess")} label={t("settings.grossLess")} hint={t("settings.grossLessHint")} />
+          <Switch on={f["gold-buy"].purity} onToggle={() => setField("gold-buy", "purity")} label={t("calc.purity")} hint={t("settings.purityHint")} />
+          <Sub>{`${t("calculators.silver")} · ${t("calc.sell")}`}</Sub>
+          <Switch on={f["silver-sell"].gross} onToggle={() => setField("silver-sell", "gross")} label={t("calc.grossWeight")} hint={t("settings.grossPacketHint")} />
+          <Switch on={f["silver-sell"].packet} onToggle={() => setField("silver-sell", "packet")} label={t("calc.packetWeight")} hint={t("settings.packetHint")} />
+          <Sub>{t("settings.calcTab")}</Sub>
+          <Switch on={state.details.itemName} onToggle={() => setDetail("itemName")} label={t("calc.itemName")} />
+          <Switch on={state.details.productCode} onToggle={() => setDetail("productCode")} label={t("calc.productCode")} hint={t("settings.codeHint")} />
         </Section>
 
         <Section
           id="products"
           icon={Package}
-          title="Product master"
-          summary={`${state.products.length} categories · ${state.products.reduce((a, c) => a + c.products.length, 0)} products`}
+          title={t("settings.products")}
+          summary={t("settings.productsSum", { c: state.products.length, p: state.products.reduce((a, c) => a + c.products.length, 0) })}
           open={open === "products"}
           onToggle={() => toggle("products")}
         >
-          <Hint>Picked as item names on the Estimate tab. Names only: no prices or weights.</Hint>
+          <Hint>{t("settings.productsHint")}</Hint>
           <ProductMaster />
         </Section>
 
-        <Section id="purity" icon={Gem} title="Purity list" summary={`${state.purities.length} purities for Gold Buy`} open={open === "purity"} onToggle={() => toggle("purity")}>
+        <Section id="purity" icon={Gem} title={t("settings.purityList")} summary={t("settings.puritySum", { n: state.purities.length })} open={open === "purity"} onToggle={() => toggle("purity")}>
           <div className="max-h-56 overflow-y-auto">
             {state.purities.map((p, i) => (
               <div key={`${p.value}-${i}`} className="flex min-h-11 items-center justify-between border-b border-purple-100 pl-4 pr-2">
@@ -288,7 +283,7 @@ export default function SettingsPage() {
                 {p.custom ? (
                   <button
                     type="button"
-                    aria-label={`Remove ${purityLabel(p)}`}
+                    aria-label={`${t("settings.remove")} ${purityLabel(p)}`}
                     onClick={() => update((s) => ({ ...s, purities: s.purities.filter((_, j) => j !== i) }))}
                     className="flex h-11 w-11 items-center justify-center text-red-600"
                   >
@@ -299,10 +294,9 @@ export default function SettingsPage() {
             ))}
           </div>
           <div className="flex gap-2 p-4">
-            <input aria-label="Name (optional)" placeholder="Name e.g. Hallmark" value={newName} onChange={(e) => setNewName(e.target.value)} className={`${inputCls} min-w-0 flex-1`} />
-            <input aria-label="Purity %" type="number" inputMode="decimal" placeholder="%" value={newVal} onChange={(e) => setNewVal(e.target.value)} className={`${inputCls} w-20`} />
+            <input aria-label={`${t("calc.purity")} %`} type="number" inputMode="decimal" placeholder={t("calc.enterPercent")} value={newVal} onChange={(e) => setNewVal(e.target.value)} className={`${inputCls} min-w-0 flex-1`} />
             <button type="button" onClick={addPurity} className="h-11 rounded-md bg-purple-800 px-4 text-sm font-semibold text-white">
-              Add
+              {t("settings.add")}
             </button>
           </div>
         </Section>
@@ -311,13 +305,13 @@ export default function SettingsPage() {
       {preview ? (
         <div className="fixed inset-0 z-50 flex flex-col bg-gray-900/70" onClick={() => setPreview(null)}>
           <div className="flex items-center justify-between px-4 py-3 text-white">
-            <h2 className="text-[17px] font-bold">Estimate preview</h2>
-            <button type="button" aria-label="Close" className="flex h-11 w-11 items-center justify-center">
+            <h2 className="text-[17px] font-bold">{t("settings.previewTitle")}</h2>
+            <button type="button" aria-label={t("common.close")} className="flex h-11 w-11 items-center justify-center">
               <X className="h-5 w-5" />
             </button>
           </div>
           <div className="flex flex-1 justify-center overflow-y-auto px-4 pb-6">
-            <img src={preview} alt="Estimate preview" className="h-fit w-full max-w-[300px] rounded-sm shadow-2xl" />
+            <img src={preview} alt={t("settings.previewTitle")} className="h-fit w-full max-w-[300px] rounded-sm shadow-2xl" />
           </div>
         </div>
       ) : null}

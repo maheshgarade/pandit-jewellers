@@ -2,6 +2,7 @@ import React from "react";
 import { X } from "lucide-react";
 import { Cell, cardCells, Estimate, EstimateItem, estimateDate, itemsHeading, money, PrintLayout, rupees } from "@/lib/receipt";
 import type { Metal, ShopDetails } from "@/lib/store";
+import { useLanguage } from "@/context/LanguageContext";
 
 const mono: React.CSSProperties = { fontFamily: "'Roboto Mono', 'Noto Sans Mono', ui-monospace, monospace" };
 const alignCls = { left: "", center: "items-center text-center", right: "items-end text-right" } as const;
@@ -25,6 +26,7 @@ const RemoveBtn: React.FC<{ label: string; onClick: () => void; className?: stri
 
 /** One item card as printed. Also the Calculator's result card. */
 export const ItemCard: React.FC<{ it: EstimateItem; no: number; mode: Estimate["mode"]; layout: PrintLayout; onRemove?: () => void }> = ({ it, no, mode, layout, onRemove }) => {
+  const { t } = useLanguage();
   const { details, summary } = cardCells(it, mode, layout);
   return (
     <div className="flex flex-col gap-[3px] rounded border border-black px-[7px] py-[5px]">
@@ -34,7 +36,7 @@ export const ItemCard: React.FC<{ it: EstimateItem; no: number; mode: Estimate["
         </span>
         <span className="flex shrink-0 items-center gap-1">
           {it.code ? <span className="whitespace-nowrap border border-black px-1 text-[10px] font-bold">{it.code}</span> : null}
-          {onRemove ? <RemoveBtn label={`Remove ${no}. ${it.name}`} onClick={onRemove} className="-mr-2" /> : null}
+          {onRemove ? <RemoveBtn label={`${t("settings.remove")} ${no}. ${it.name}`} onClick={onRemove} className="-mr-2" /> : null}
         </span>
       </div>
       {details.map((r, k) => (
@@ -57,16 +59,17 @@ export const EstimateView: React.FC<{
   onRemoveItem?: (index: number) => void;
   onRemoveOld?: (metal: Metal) => void;
 }> = ({ est, shop, no, layout, shopDetails, onRemoveItem, onRemoveOld }) => {
+  const { t } = useLanguage();
   const customer = (
     [
-      ["Name", est.customer.name],
-      ["Mobile", est.customer.number],
-      ["Address", est.customer.address],
+      [t("print.name"), est.customer.name],
+      [t("print.mobile"), est.customer.number],
+      [t("print.address"), est.customer.address],
     ] as const
   ).filter(([, v]) => v);
   const shopLines = shopDetails ? [shop.address, shop.phone && `Ph: ${shop.phone}`, shop.gstin && `GSTIN: ${shop.gstin}`, shop.other].filter(Boolean) : [];
   return (
-    <section aria-label={`Estimate No ${no}`} className="mx-auto flex w-full max-w-[360px] flex-col gap-2 bg-white px-3 py-3.5 text-[11px] leading-snug text-black shadow-lg" style={mono}>
+    <section aria-label={`${t("print.estimateNo")} ${no}`} className="mx-auto flex w-full max-w-[360px] flex-col gap-2 bg-white px-3 py-3.5 text-[11px] leading-snug text-black shadow-lg" style={mono}>
       <div className="text-center text-base font-bold tracking-wider">{(shop.name || "").toUpperCase()}</div>
       {shopLines.map((l, i) => (
         <div key={i} className="-mt-1 text-center text-[10px]">
@@ -75,7 +78,9 @@ export const EstimateView: React.FC<{
       ))}
       <div className="border-t border-dashed border-black" />
       <div className="flex justify-between gap-2">
-        <span>Estimate No: {no}</span>
+        <span>
+          {t("print.estimateNo")}: {no}
+        </span>
         <span>{estimateDate()}</span>
       </div>
       <div className="border-t border-dashed border-black" />
@@ -96,7 +101,7 @@ export const EstimateView: React.FC<{
         <span>
           {itemsHeading(est)} ({est.items.length})
         </span>
-        <span>{est.mode === "sell" ? "Totals incl. GST" : ""}</span>
+        <span>{est.mode === "sell" ? t("print.totalsInclGst") : ""}</span>
       </div>
       <div className="flex flex-col gap-1.5">
         {est.items.map((it, i) => (
@@ -106,13 +111,15 @@ export const EstimateView: React.FC<{
       <div className="mt-1 border-t border-dashed border-black" />
       <div className="flex flex-col gap-0.5">
         <div className="flex justify-between font-semibold">
-          <span>Items Total ({est.items.length})</span>
+          <span>
+            {t("print.itemsTotal")} ({est.items.length})
+          </span>
           <span>{money(est.itemsTotal)}</span>
         </div>
         {est.less.map((l) => (
           <div key={l.metal} className="flex items-center justify-between gap-1">
             <span className="flex items-center">
-              {onRemoveOld ? <RemoveBtn label={`Remove ${l.label.replace("Less: ", "").toLowerCase()}`} onClick={() => onRemoveOld(l.metal)} className="-ml-3" /> : null}
+              {onRemoveOld ? <RemoveBtn label={`${t("settings.remove")} ${l.label}`} onClick={() => onRemoveOld(l.metal)} className="-ml-3" /> : null}
               {l.label}
             </span>
             <span>-{money(l.amount)}</span>
@@ -120,7 +127,7 @@ export const EstimateView: React.FC<{
         ))}
         {est.roundOff ? (
           <div className="flex justify-between">
-            <span>Round Off</span>
+            <span>{t("print.roundOff")}</span>
             <span>
               {est.roundOff > 0 ? "+" : "-"}
               {money(Math.abs(est.roundOff))}
@@ -132,7 +139,9 @@ export const EstimateView: React.FC<{
         <span>{est.payLabel}</span>
         <span>{rupees(est.grand)}</span>
       </div>
-      {est.salesman ? <div className="text-[10px]">Salesman: {est.salesman}</div> : null}
+      {est.salesman ? <div className="text-[10px]">
+          {t("print.salesman")}: {est.salesman}
+        </div> : null}
       {shopDetails && shop.footer ? <div className="text-center text-[10px]">{shop.footer}</div> : null}
     </section>
   );

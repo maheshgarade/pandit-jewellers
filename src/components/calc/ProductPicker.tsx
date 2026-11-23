@@ -44,7 +44,7 @@ export const ProductPicker: React.FC<{ onPick: (name: string) => void; onClose: 
             </button>
           ) : null}
           <h2 className="flex-1 truncate px-2 text-lg font-bold text-purple-900">{cat && !q ? cat.name : t("products.choose")}</h2>
-          <button type="button" aria-label="Close" onClick={onClose} className="flex h-11 w-11 items-center justify-center text-gray-600">
+          <button type="button" aria-label={t("common.close")} onClick={onClose} className="flex h-11 w-11 items-center justify-center text-gray-600">
             <X className="h-5 w-5" />
           </button>
         </div>

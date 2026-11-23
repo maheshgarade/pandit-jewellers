@@ -1,5 +1,6 @@
 import type { EstimateState, Metal, PaperWidth, ShopDetails } from "./store";
 import type { ItemInput } from "./items";
+import { tr } from "@/context/LanguageContext";
 
 /** One item card on the estimate. Sold items carry the price breakdown; old gold / silver the fine-metal value. */
 export interface EstimateItem {
@@ -40,6 +41,8 @@ export interface Estimate {
   /** The final amount in whole rupees, always positive: payLabel says which way it goes. */
   grand: number;
   payLabel: string;
+  /** "net": the customer pays (Net payable); "pay": the shop pays (Amount to pay). */
+  payKind: "net" | "pay";
   /** Printed at the bottom as "Salesman: <name>" when set. */
   salesman?: string;
 }
@@ -71,10 +74,10 @@ export const estimateDate = () =>
 
 /** "ITEMS", or what the cards are on a purchase estimate. */
 export const itemsHeading = (est: Estimate) => {
-  if (est.mode === "sell") return "ITEMS";
-  if (est.items.every((it) => it.metal === "gold")) return "OLD GOLD";
-  if (est.items.every((it) => it.metal === "silver")) return "OLD SILVER";
-  return "OLD GOLD & SILVER";
+  if (est.mode === "sell") return tr("print.items");
+  if (est.items.every((it) => it.metal === "gold")) return tr("print.oldGold");
+  if (est.items.every((it) => it.metal === "silver")) return tr("print.oldSilver");
+  return tr("print.oldGoldSilver");
 };
 
 /**
@@ -88,7 +91,7 @@ export function buildEstimate(e: EstimateState, roundTo10: boolean): Estimate {
   const itemsTotal = sum(items);
   const less = sell
     ? (["gold", "silver"] as const)
-        .map((metal) => ({ metal, label: metal === "gold" ? "Less: Old Gold" : "Less: Old Silver", amount: sum(e.old.filter((o) => o.metal === metal)) }))
+        .map((metal) => ({ metal, label: metal === "gold" ? tr("print.lessOldGold") : tr("print.lessOldSilver"), amount: sum(e.old.filter((o) => o.metal === metal)) }))
         .filter((l) => l.amount > 0)
     : [];
   const net = r2(itemsTotal - less.reduce((a, l) => a + l.amount, 0));
@@ -103,7 +106,8 @@ export function buildEstimate(e: EstimateState, roundTo10: boolean): Estimate {
     less,
     roundOff: r2(grand - amount),
     grand,
-    payLabel: sell && net >= 0 ? "NET PAYABLE" : "AMOUNT TO PAY",
+    payKind: sell && net >= 0 ? "net" : "pay",
+    payLabel: sell && net >= 0 ? tr("print.netPayable") : tr("print.amountToPay"),
     salesman: e.salesman?.trim() || undefined,
   };
 }
@@ -120,13 +124,13 @@ export function cardCells(it: EstimateItem, mode: Estimate["mode"], layout: Prin
   const c = (label: string, value: string, bold = false) => ({ label, value, bold });
   const summary =
     mode === "sell"
-      ? [c("Net Wt (g)", wt(it.net), true), ...(layout === "detailed" ? [c("GST 3% ₹", money(it.gst ?? 0))] : []), c("Total ₹", money(it.total), true)]
-      : [c("Net Wt (g)", wt(it.net), true), ...(it.fine !== undefined ? [c("Fine (g)", wt(it.fine), true)] : []), c("Amount ₹", money(it.total), true)];
+      ? [c(tr("print.netWt"), wt(it.net), true), ...(layout === "detailed" ? [c(tr("print.gst"), money(it.gst ?? 0))] : []), c(tr("print.total"), money(it.total), true)]
+      : [c(tr("print.netWt"), wt(it.net), true), ...(it.fine !== undefined ? [c(tr("print.fine"), wt(it.fine), true)] : []), c(tr("print.amount"), money(it.total), true)];
   if (layout === "compact") return { details: [], summary: align(summary, true) };
-  const weights = it.gross !== undefined ? [c("Gross Wt", wt(it.gross)), c(it.lessLabel ?? "Less Wt", wt(it.less ?? 0))] : [];
+  const weights = it.gross !== undefined ? [c(tr("print.grossWt"), wt(it.gross)), c(it.lessLabel === "Packet Wt" ? tr("print.packetWt") : tr("print.lessWt"), wt(it.less ?? 0))] : [];
   const rest =
     mode === "sell"
-      ? [c("Metal ₹", money(it.price ?? 0)), c("Making ₹", money(it.making ?? 0)), ...(it.other ? [c("Other ₹", money(it.other))] : [])]
+      ? [c(tr("print.metal"), money(it.price ?? 0)), c(tr("print.making"), money(it.making ?? 0)), ...(it.other ? [c(tr("print.other"), money(it.other))] : [])]
       : it.fine !== undefined
         ? [c("99.50 (g)", wt(it.eq995 ?? it.fine / 0.995)), c("99.9 (g)", wt(it.eq999 ?? it.fine / 0.999))]
         : [];
@@ -241,7 +245,7 @@ export async function drawEstimate(
   gap(4);
   rule();
   gap(8);
-  lr(`Estimate No: ${no}`, estimateDate(), 11);
+  lr(`${tr("print.estimateNo")}: ${no}`, estimateDate(), 11);
   gap(4);
   rule();
   gap(8);
@@ -249,9 +253,9 @@ export async function drawEstimate(
   // Customer: only the filled-in details, no heading.
   const customer = (
     [
-      ["Name", est.customer.name],
-      ["Mobile", est.customer.number],
-      ["Address", est.customer.address],
+      [tr("print.name"), est.customer.name],
+      [tr("print.mobile"), est.customer.number],
+      [tr("print.address"), est.customer.address],
     ] as const
   ).filter(([, v]) => v);
   if (customer.length) {
@@ -270,7 +274,7 @@ export async function drawEstimate(
     gap(8);
   }
 
-  lr(`${itemsHeading(est)} (${est.items.length})`, est.mode === "sell" ? "Totals incl. GST" : "", 11, 700);
+  lr(`${itemsHeading(est)} (${est.items.length})`, est.mode === "sell" ? tr("print.totalsInclGst") : "", 11, 700);
   gap(6);
 
   // Item cards
@@ -335,14 +339,14 @@ export async function drawEstimate(
   gap(2);
   rule();
   gap(8);
-  lr(`Items Total (${est.items.length})`, money(est.itemsTotal), 11, 600);
+  lr(`${tr("print.itemsTotal")} (${est.items.length})`, money(est.itemsTotal), 11, 600);
   for (const l of est.less) {
     gap(3);
     lr(l.label, `-${money(l.amount)}`, 11);
   }
   if (est.roundOff) {
     gap(3);
-    lr("Round Off", `${est.roundOff > 0 ? "+" : "-"}${money(Math.abs(est.roundOff))}`, 11);
+    lr(tr("print.roundOff"), `${est.roundOff > 0 ? "+" : "-"}${money(Math.abs(est.roundOff))}`, 11);
   }
   gap(8);
   rule(true);
@@ -355,7 +359,7 @@ export async function drawEstimate(
   if (est.salesman) {
     gap(8);
     font(10);
-    text(`Salesman: ${est.salesman}`, P, y);
+    text(`${tr("print.salesman")}: ${est.salesman}`, P, y);
     y += 10 * 1.4 * s;
   }
   if (shopDetails && shop.footer) {

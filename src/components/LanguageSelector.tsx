@@ -10,7 +10,6 @@ import { Language, useLanguage } from "../context/LanguageContext";
 
 const languages = [
   { code: "en", name: "English" },
-  { code: "hi", name: "हिंदी" },
   { code: "mr", name: "मराठी" },
 ];
 
@@ -23,7 +22,7 @@ const LanguageSelector = () => {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center justify-center w-8 h-8 text-white hover:text-amber-200 transition-colors">
+      <DropdownMenuTrigger aria-label="Language / भाषा" className="flex items-center justify-center w-11 h-11 text-white hover:text-amber-200 transition-colors">
         <Globe className="w-5 h-5" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-32">

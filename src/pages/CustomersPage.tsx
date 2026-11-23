@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronDown, FileText, Pencil, Phone, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
@@ -17,7 +17,14 @@ const CustomersPage: React.FC = () => {
   const { state, update } = useStore();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
+  const [params, setParams] = useSearchParams();
+  // "Create customer" from the + button opens the form straight away.
   const [editing, setEditing] = useState<SavedCustomer | "new" | null>(null);
+  useEffect(() => {
+    if (!params.get("add")) return;
+    setEditing("new");
+    setParams({}, { replace: true });
+  }, [params, setParams]);
   const [deleting, setDeleting] = useState<SavedCustomer | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [viewing, setViewing] = useState<SavedEstimate | null>(null);
@@ -140,7 +147,7 @@ const CustomersPage: React.FC = () => {
             <h2 className="text-[17px] font-bold">
               {t("estimate.title")} No: {viewing.no}
             </h2>
-            <button type="button" aria-label="Close" onClick={() => setViewing(null)} className="flex h-11 w-11 items-center justify-center">
+            <button type="button" aria-label={t("common.close")} onClick={() => setViewing(null)} className="flex h-11 w-11 items-center justify-center">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -164,7 +171,7 @@ const CustomersPage: React.FC = () => {
           footer={
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setDeleting(null)} className="h-12 rounded-lg border border-gray-300 text-[15px] text-gray-700">
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -199,7 +206,7 @@ const CustomerForm: React.FC<{ initial: Customer; title: string; onClose: () => 
       footer={
         <div className="grid grid-cols-2 gap-2">
           <button type="button" onClick={onClose} className="h-12 rounded-lg border border-gray-300 text-[15px] text-gray-700">
-            Cancel
+            {t("common.cancel")}
           </button>
           <button type="button" disabled={!ok} onClick={() => onSave(c)} className={`${primaryBtnCls} disabled:opacity-50`}>
             {t("customers.save")}

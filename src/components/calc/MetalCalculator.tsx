@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { ArrowRight, Plus, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -237,7 +237,7 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
 
   return (
     <div className="flex flex-col gap-3">
-      <div role="group" aria-label="Mode" className="grid grid-cols-2 overflow-hidden rounded-full border border-purple-300 bg-white">
+      <div role="group" aria-label={t("calc.mode")} className="grid grid-cols-2 overflow-hidden rounded-full border border-purple-300 bg-white">
         {(["sell", "buy"] as Mode[]).map((m) => (
           <button
             key={m}
@@ -283,7 +283,7 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
                 onChange={(e) => typeRate(e.target.value)}
                 onIcon={() => setDialog("rate")}
                 iconSet={saved.rate !== null}
-                iconLabel={`${saved.rate !== null ? "Edit" : "Set"} ${metal} ${mode} rate`}
+                iconLabel={`${saved.rate !== null ? t("calc.update") : t("calc.set")}: ${rateLabel}`}
               />
             </Field>
             {/* Net on the right, under Less when Gross & Less are on. */}
@@ -298,7 +298,7 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
               <Field id={`${metal}-making`} label={t("calc.making")}>
                 <div className="flex gap-1.5">
                   <select
-                    aria-label="Making charges type"
+                    aria-label={t("calc.makingType")}
                     value={mType}
                     onChange={(e) => setMTypeIn(e.target.value as MakingType)}
                     className="h-11 rounded-md border border-purple-200 bg-white px-0.5 text-sm"
@@ -314,7 +314,7 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
                     onChange={(e) => setMakingIn(e.target.value)}
                     onIcon={() => setDialog("making")}
                     iconSet={savedMaking.value !== null}
-                    iconLabel={savedMaking.value !== null ? "Edit default making charges" : "Set default making charges"}
+                    iconLabel={`${savedMaking.value !== null ? t("calc.update") : t("calc.set")} ${t("calc.defaultMaking")}`}
                   />
                 </div>
                 {makingOverridden ? (
@@ -509,6 +509,7 @@ export const RateDialog: React.FC<{
   onClose: () => void;
   onSave: (v: number) => void;
 }> = ({ title, label, initial, updatedAt, actionLabel, onClose, onSave }) => {
+  const { t } = useLanguage();
   const [v, setV] = useState(initial !== null ? String(initial) : "");
   return (
     <Modal
@@ -517,7 +518,7 @@ export const RateDialog: React.FC<{
       footer={
         <div className="grid grid-cols-2 gap-2">
           <button type="button" onClick={onClose} className="h-12 rounded-lg border border-gray-300 text-[15px] text-gray-700">
-            Cancel
+            {t("common.cancel")}
           </button>
           <button type="button" disabled={v === ""} onClick={() => onSave(num(v))} className={`${primaryBtnCls} disabled:opacity-50`}>
             {actionLabel}
@@ -530,7 +531,7 @@ export const RateDialog: React.FC<{
           {label}
         </label>
         <input id="dlg-rate" type="number" inputMode="decimal" autoFocus value={v} onChange={(e) => setV(e.target.value)} className={`${inputCls} h-12 text-lg font-semibold`} />
-        {updatedAt ? <span className="text-xs text-gray-500">Last updated {timeText(updatedAt)}</span> : null}
+        {updatedAt ? <span className="text-xs text-gray-600">{t("calc.lastUpdated", { time: timeText(updatedAt) })}</span> : null}
       </div>
     </Modal>
   );
@@ -544,9 +545,10 @@ const MakingDialog: React.FC<{
   onClose: () => void;
   onSave: (t: MakingType, v: number) => void;
 }> = ({ title, initialType, initialValue, actionLabel, onClose, onSave }) => {
+  const { t } = useLanguage();
   const [ty, setTy] = useState<MakingType>(initialType);
   const [v, setV] = useState(initialValue !== null ? String(initialValue) : "");
-  const hint = useMemo(() => "Used for every Sell bill. You can still change it on a single bill.", []);
+  const hint = t("calc.makingHint");
   return (
     <Modal
       title={title}
@@ -554,7 +556,7 @@ const MakingDialog: React.FC<{
       footer={
         <div className="grid grid-cols-2 gap-2">
           <button type="button" onClick={onClose} className="h-12 rounded-lg border border-gray-300 text-[15px] text-gray-700">
-            Cancel
+            {t("common.cancel")}
           </button>
           <button type="button" disabled={v === ""} onClick={() => onSave(ty, num(v))} className={`${primaryBtnCls} disabled:opacity-50`}>
             {actionLabel}
@@ -564,12 +566,12 @@ const MakingDialog: React.FC<{
     >
       <div className="flex flex-col gap-1.5">
         <label htmlFor="dlg-making" className="text-sm font-medium text-purple-800">
-          Making Charges
+          {t("calc.making")}
         </label>
         <div className="flex gap-2">
-          <select aria-label="Making charges type" value={ty} onChange={(e) => setTy(e.target.value as MakingType)} className="h-12 rounded-lg border border-purple-300 bg-white px-1.5 text-[15px]">
+          <select aria-label={t("calc.makingType")} value={ty} onChange={(e) => setTy(e.target.value as MakingType)} className="h-12 rounded-lg border border-purple-300 bg-white px-1.5 text-[15px]">
             <option value="percentage">%</option>
-            <option value="flat">Flat ₹</option>
+            <option value="flat">{t("calc.flat")} ₹</option>
             <option value="pergram">₹ / g</option>
           </select>
           <input id="dlg-making" type="number" inputMode="decimal" autoFocus value={v} onChange={(e) => setV(e.target.value)} className={`${inputCls} h-12 text-lg font-semibold`} />

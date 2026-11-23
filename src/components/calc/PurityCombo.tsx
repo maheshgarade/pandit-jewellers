@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { purityLabel, useStore } from "@/lib/store";
 import { inputCls } from "./ui";
+import { useLanguage } from "@/context/LanguageContext";
 
 /**
  * One box for purity: type any % (custom), or pick from the list with the arrow. "Custom" clears the box
@@ -9,6 +10,7 @@ import { inputCls } from "./ui";
  */
 export const PurityCombo: React.FC<{ id: string; value: string; onChange: (v: string) => void }> = ({ id, value, onChange }) => {
   const { state } = useStore();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -41,7 +43,7 @@ export const PurityCombo: React.FC<{ id: string; value: string; onChange: (v: st
         role="combobox"
         aria-expanded={open}
         aria-controls={`${id}-list`}
-        placeholder="Enter %"
+        placeholder={t("calc.enterPercent")}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={`${inputCls} pr-20`}
@@ -53,7 +55,7 @@ export const PurityCombo: React.FC<{ id: string; value: string; onChange: (v: st
       ) : null}
       <button
         type="button"
-        aria-label="Choose purity"
+        aria-label={t("calc.choosePurity")}
         onClick={() => setOpen((o) => !o)}
         className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center text-gray-500"
       >
@@ -63,7 +65,7 @@ export const PurityCombo: React.FC<{ id: string; value: string; onChange: (v: st
         <div
           id={`${id}-list`}
           role="listbox"
-          aria-label="Purity"
+          aria-label={t("calc.purity")}
           className="absolute left-0 right-0 top-12 z-30 flex max-h-72 flex-col overflow-y-auto rounded-lg border border-purple-200 bg-white p-1 shadow-xl"
         >
           <button type="button" role="option" aria-selected={!match} onClick={() => pick(null)} className="min-h-11 rounded-md border-b border-purple-100 px-3 text-left text-[15px]">

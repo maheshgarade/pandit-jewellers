@@ -52,7 +52,7 @@ export const EstimatePanel: React.FC = () => {
           <span className="flex min-w-0 items-center gap-1.5 text-xs text-gray-600">
             {it.code ? <span className="shrink-0 rounded border border-gray-400 px-1 text-[11px] font-semibold text-gray-800">{it.code}</span> : null}
             <span className="truncate">
-            {[`Net ${it.net.toFixed(3)} g`, it.fine !== undefined ? `Fine ${it.fine.toFixed(3)} g` : "", it.purity ?? "", deducted ? t("estimate.deducted") : ""].filter(Boolean).join(" · ")}
+            {[`${t("estimate.net")} ${it.net.toFixed(3)} g`, it.fine !== undefined ? `${t("estimate.fine")} ${it.fine.toFixed(3)} g` : "", it.purity ?? "", deducted ? t("estimate.deducted") : ""].filter(Boolean).join(" · ")}
             </span>
           </span>
         </div>
@@ -103,7 +103,7 @@ export const EstimatePanel: React.FC = () => {
           </div>
         ) : null}
         <div className="mt-1 flex items-center justify-between gap-2 rounded-md bg-gradient-to-r from-purple-200 via-pink-200 to-rose-200 py-1 pl-3 pr-1 font-bold text-purple-900">
-          <span>{est.payLabel === "NET PAYABLE" ? t("estimate.netPayable") : t("calc.amountToPay")}</span>
+          <span>{est.payKind === "net" ? t("estimate.netPayable") : t("calc.amountToPay")}</span>
           <span className="flex items-center">
             {rupees(est.grand)}
             {canAdjust ? (
@@ -166,7 +166,7 @@ export const EstimatePanel: React.FC = () => {
           footer={
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setDeleting(null)} className="h-12 rounded-lg border border-gray-300 text-[15px] text-gray-700">
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -194,7 +194,7 @@ export const EstimatePanel: React.FC = () => {
           footer={
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setConfirmNew(false)} className="h-12 rounded-lg border border-gray-300 text-[15px] text-gray-700">
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -308,7 +308,7 @@ const ItemEditor: React.FC<{ item: EstimateItem; onClose: () => void; onSave: (i
                 <>
                   <Field id="ie-mkValue" label={t("calc.making")}>
                     <div className="flex gap-1.5">
-                      <select aria-label="Making charges type" value={f.mkType} onChange={(e) => set("mkType", e.target.value)} className="h-11 rounded-md border border-purple-200 bg-white px-0.5 text-sm">
+                      <select aria-label={t("calc.makingType")} value={f.mkType} onChange={(e) => set("mkType", e.target.value)} className="h-11 rounded-md border border-purple-200 bg-white px-0.5 text-sm">
                         <option value="percentage">%</option>
                         <option value="flat">₹</option>
                         <option value="pergram">₹/g</option>
@@ -326,7 +326,7 @@ const ItemEditor: React.FC<{ item: EstimateItem; onClose: () => void; onSave: (i
         </div>
         <div className="grid grid-cols-2 gap-2">
           <button type="button" onClick={onClose} className="h-12 rounded-lg border border-gray-300 text-[15px] text-gray-700">
-            Cancel
+            {t("common.cancel")}
           </button>
           <button type="button" onClick={save} className={primaryBtnCls}>
             {t("customers.save")}
@@ -351,7 +351,7 @@ const AdjustDialog: React.FC<{ current: number; net: number; onClose: () => void
       footer={
         <div className="grid grid-cols-2 gap-2">
           <button type="button" onClick={onClose} className="h-12 rounded-lg border border-gray-300 text-[15px] text-gray-700">
-            Cancel
+            {t("common.cancel")}
           </button>
           <button type="button" disabled={!ok} onClick={() => onSave(Math.round(target))} className={`${primaryBtnCls} disabled:opacity-50`}>
             {t("customers.save")}

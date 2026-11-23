@@ -18,10 +18,10 @@ const Header: React.FC = () => {
       <div className="container mx-auto flex items-center justify-between gap-2 px-3 py-2">
         {onHome ? (
           <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
-            <img src="/logo/logo.png" alt="Pandit Jewellers logo" className="h-8 w-8 object-contain" />
+            <img src="/logo/logo.png" alt={t("common.logo")} className="h-8 w-8 object-contain" />
           </div>
         ) : (
-          <Link to={back} aria-label="Back" className="flex h-11 w-11 shrink-0 items-center justify-center text-white">
+          <Link to={back} aria-label={t("common.back")} className="flex h-11 w-11 shrink-0 items-center justify-center text-white">
             <ChevronLeft className="h-6 w-6" />
           </Link>
         )}
@@ -30,7 +30,7 @@ const Header: React.FC = () => {
         </h1>
         <div className="flex shrink-0 items-center">
           <LanguageSelector />
-          <Link to="/settings" aria-label="Settings" className="flex h-11 w-11 items-center justify-center text-white">
+          <Link to="/settings" aria-label={t("settings.title")} className="flex h-11 w-11 items-center justify-center text-white">
             <Settings className="h-5 w-5" />
           </Link>
         </div>
