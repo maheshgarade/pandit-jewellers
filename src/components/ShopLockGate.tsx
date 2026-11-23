@@ -18,6 +18,7 @@ export const ShopLockGate: React.FC<{ children: React.ReactNode }> = ({ children
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [backup, setBackup] = useState(false);
   const running = useRef(false);
 
   const check = useCallback(async () => {
@@ -84,13 +85,37 @@ export const ShopLockGate: React.FC<{ children: React.ReactNode }> = ({ children
           </button>
           <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-2 rounded-xl border border-purple-200 bg-white p-4">
             <label htmlFor="owner-code" className="text-[13px] font-medium text-purple-800">
-              {t("lock.ownerCode")}
+              {backup ? t("lock.backupCode") : t("lock.appCode")}
             </label>
-            <input id="owner-code" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder={t("lock.ownerCodePh")} className={inputCls} />
+            {backup ? (
+              <input id="owner-code" autoCapitalize="characters" autoComplete="off" value={code} onChange={(e) => setCode(e.target.value)} placeholder="XXXX-XXXX" className={`${inputCls} font-mono`} />
+            ) : (
+              <input
+                id="owner-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                placeholder="123456"
+                className={`${inputCls} text-center font-mono text-xl tracking-[0.4em]`}
+              />
+            )}
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
             <p className="text-xs text-gray-600">{t("lock.ownerHint", { h: loadConfig()?.grantHours ?? 2 })}</p>
-            <button type="submit" disabled={busy || !code.trim()} className="h-11 rounded-md bg-purple-800 text-sm font-semibold text-white disabled:opacity-50">
+            <button type="submit" disabled={busy || (backup ? !code.trim() : code.length !== 6)} className="h-11 rounded-md bg-purple-800 text-sm font-semibold text-white disabled:opacity-50">
               {t("lock.unlock")}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setBackup((b) => !b);
+                setCode("");
+                setError("");
+              }}
+              className="h-10 text-sm font-medium text-purple-700 underline"
+            >
+              {backup ? t("lock.useApp") : t("lock.useBackup")}
             </button>
           </form>
         </>

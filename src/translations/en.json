@@ -398,6 +398,10 @@
     "lockNow": "End owner unlock now",
     "lockedNow": "Owner unlock ended",
     "remove": "Remove shop lock",
-    "removeConfirm": "Remove the shop lock? The authenticator entry and backup codes will stop working."
+    "removeConfirm": "Remove the shop lock? The authenticator entry and backup codes will stop working.",
+    "appCode": "6-digit code from the owner's authenticator app",
+    "backupCode": "Backup code",
+    "useBackup": "Owner's phone not available? Use a backup code",
+    "useApp": "Use the authenticator app code"
   }
 }
