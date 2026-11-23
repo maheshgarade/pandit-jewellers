@@ -39,3 +39,8 @@ android/app/debug/
 
 # Ignore Gradle Wrapper logs
 android/gradle/wrapper/gradle-wrapper.jar
+
+# Release signing key: never commit; back it up
+*.jks
+*.keystore
+keystore.properties
