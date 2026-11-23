@@ -78,6 +78,8 @@ export interface AppState {
   printShopDetails: boolean;
   /** Item cards on the estimate: Net Wt and Total only, or the full breakdown. */
   layout: PrintLayout;
+  /** Rates are entered and saved per 1 g (default) or per 10 g. Calculations divide by this. */
+  rateUnit: 1 | 10;
   printer: SavedPrinter | null;
   paper: PaperWidth;
   billSeq: number;
@@ -120,6 +122,7 @@ const DEFAULT_STATE: AppState = {
   shop: { name: "Pandit Jewellers", address: "", phone: "", gstin: "", other: "", footer: "Thank you! Visit again." },
   printShopDetails: false,
   layout: "compact",
+  rateUnit: 1,
   printer: null,
   paper: 58,
   billSeq: 1,

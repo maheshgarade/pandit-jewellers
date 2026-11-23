@@ -47,6 +47,8 @@
     "packetWeight": "Packet Weight (g)",
     "goldRate": "Gold Rate (per gram)",
     "silverRate": "Silver Rate (per gram)",
+    "goldRate10": "Gold Rate (per 10 g)",
+    "silverRate10": "Silver Rate (per 10 g)",
     "making": "Making Charges",
     "otherCharges": "Other Charges",
     "purity": "Purity",

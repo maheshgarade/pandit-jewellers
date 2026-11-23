@@ -82,6 +82,33 @@ export default function SettingsPage() {
       <div className="container mx-auto flex max-w-md flex-col gap-4 px-4 py-4">
         <h1 className="text-xl font-bold text-purple-900">Settings</h1>
 
+        <Card title="Rate unit" hint="How gold and silver rates are entered and saved. Saved rates are converted when you switch.">
+          <div role="radiogroup" aria-label="Rate unit" className="grid grid-cols-2 gap-2 px-4 pb-4">
+            {([1, 10] as const).map((u) => (
+              <button
+                key={u}
+                type="button"
+                role="radio"
+                aria-checked={state.rateUnit === u}
+                onClick={() =>
+                  update((s) => {
+                    if (s.rateUnit === u) return s;
+                    const k = u / s.rateUnit; // 10 or 0.1
+                    const rates = Object.fromEntries(
+                      Object.entries(s.rates).map(([key, r]) => [key, { ...r, rate: r.rate === null ? null : Math.round(r.rate * k * 100) / 100 }])
+                    ) as typeof s.rates;
+                    return { ...s, rateUnit: u, rates };
+                  })
+                }
+                className={`flex min-h-16 flex-col items-center justify-center rounded-xl border-2 ${state.rateUnit === u ? "border-purple-700 bg-purple-50" : "border-gray-200"}`}
+              >
+                <span className="text-[15px] font-semibold text-gray-900">{u === 1 ? "Per gram" : "Per 10 gram"}</span>
+                <span className="text-xs text-gray-600">{u === 1 ? "e.g. ₹6,850 / g" : "e.g. ₹68,500 / 10 g"}</span>
+              </button>
+            ))}
+          </div>
+        </Card>
+
         <Card title="Calculator fields" hint="Turn on the extra fields you need. Each metal and mode has its own.">
           <h3 className="border-t border-purple-100 bg-purple-50 px-4 py-2 text-sm font-bold text-purple-900">Gold · Sell</h3>
           <Switch on={f["gold-sell"].grossLess} onToggle={() => setField("gold-sell", "grossLess")} label="Gross & Less Weight" hint="Net = Gross − Less" />

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { EMPTY_ESTIMATE, EstimateState, MakingType, makingText, Metal, Mode, rateKey, timeText, useStore } from "@/lib/store";
 import { money, type EstimateItem } from "@/lib/receipt";
 import { useLanguage } from "@/context/LanguageContext";
-import { Field, inputCls, linkBtnCls, Modal, NumberInput, primaryBtnCls, readOnlyCls, resetBtnCls } from "./ui";
+import { Field, inputCls, linkBtnCls, Modal, NumberInput, primaryBtnCls, resetBtnCls } from "./ui";
 import { PurityCombo } from "./PurityCombo";
 import { ItemCard } from "./EstimateView";
 
@@ -51,7 +51,8 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
   const saved = state.rates[rateKey(metal, mode)];
   const savedMaking = state.making[metal];
   const metalName = metal === "gold" ? t("calculators.gold") : t("calculators.silver");
-  const rateLabel = metal === "gold" ? t("calc.goldRate") : t("calc.silverRate");
+  const per10 = state.rateUnit === 10;
+  const rateLabel = t(`calc.${metal === "gold" ? "goldRate" : "silverRate"}${per10 ? "10" : ""}`);
 
   // Which optional fields are on (Settings, per metal and mode).
   const isSilver = metal === "silver";
@@ -64,8 +65,18 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
   const rateVal = rateIn ?? (saved.rate !== null ? String(saved.rate) : "");
   const mType = mTypeIn ?? savedMaking.type;
   const makingVal = makingIn ?? (savedMaking.value !== null ? String(savedMaking.value) : "");
-  const net = grossOn ? Math.max(0, num(gross) - (leftOn ? num(less) : 0)) : num(netIn);
-  const hasWeight = grossOn ? gross !== "" : netIn !== "";
+  // Net is always its own field: filled in as Gross − Less while those are typed, and can still be edited.
+  const net = num(netIn);
+  const hasWeight = netIn !== "";
+  const fillNet = (g: string, l: string) => setNetIn(g === "" ? "" : Math.max(0, num(g) - (leftOn ? num(l) : 0)).toFixed(3));
+  const typeGross = (v: string) => {
+    setGross(v);
+    fillNet(v, less);
+  };
+  const typeLess = (v: string) => {
+    setLess(v);
+    fillNet(gross, v);
+  };
 
   const makingOverridden =
     savedMaking.value !== null && ((makingIn !== null && num(makingIn) !== savedMaking.value) || (mTypeIn !== null && mTypeIn !== savedMaking.type));
@@ -117,7 +128,7 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
   /** The item in the form, or null when weight or rate is missing. */
   const currentItem = (): EstimateItem | null => {
     if (!hasWeight || rateVal === "") return null;
-    const rate = num(rateVal);
+    const rate = num(rateVal) / state.rateUnit; // per gram, whatever unit the rate is entered in
     const base: EstimateItem = {
       metal,
       name: (showName && itemName.trim()) || (mode === "sell" ? `${metalName} ${t("calc.defaultItem")}` : `${t("calc.oldItem")} ${metalName}`),
@@ -215,22 +226,25 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
         </section>
       ) : (
         <section className="flex flex-col gap-4 rounded-xl border border-purple-200 bg-gradient-to-br from-white to-purple-50 p-4 shadow-lg">
+          {/* Weights in order: Gross, Less, then Net (= Gross − Less, still editable). */}
           {grossOn ? (
             <div className="grid grid-cols-2 gap-4">
+              <Field id={`${metal}-gross`} label={t("calc.grossWeight")}>
+                <input id={`${metal}-gross`} type="number" inputMode="decimal" placeholder={t("calc.enterWeight")} value={gross} onChange={(e) => typeGross(e.target.value)} className={inputCls} />
+              </Field>
               {leftOn ? (
                 <Field id={`${metal}-less`} label={leftLabel}>
-                  <input id={`${metal}-less`} type="number" inputMode="decimal" placeholder="0" value={less} onChange={(e) => setLess(e.target.value)} className={inputCls} />
+                  <input id={`${metal}-less`} type="number" inputMode="decimal" placeholder="0" value={less} onChange={(e) => typeLess(e.target.value)} className={inputCls} />
                 </Field>
-              ) : (
-                <div />
-              )}
-              <Field id={`${metal}-gross`} label={t("calc.grossWeight")}>
-                <input id={`${metal}-gross`} type="number" inputMode="decimal" placeholder={t("calc.enterWeight")} value={gross} onChange={(e) => setGross(e.target.value)} className={inputCls} />
-              </Field>
+              ) : null}
             </div>
           ) : null}
 
           <div className="grid grid-cols-2 gap-4">
+            <Field id={`${metal}-net`} label={t("calc.netWeight")}>
+              <input id={`${metal}-net`} type="number" inputMode="decimal" placeholder={t("calc.enterWeight")} value={netIn} onChange={(e) => setNetIn(e.target.value)} className={inputCls} />
+              {grossOn ? <span className="text-xs text-gray-600">{netHint}</span> : null}
+            </Field>
             <Field id={`${metal}-rate`} label={rateLabel}>
               <NumberInput
                 id={`${metal}-rate`}
@@ -241,16 +255,6 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
                 iconSet={saved.rate !== null}
                 iconLabel={`${saved.rate !== null ? "Edit" : "Set"} ${metal} ${mode} rate`}
               />
-            </Field>
-            <Field id={`${metal}-net`} label={t("calc.netWeight")}>
-              {grossOn ? (
-                <>
-                  <input id={`${metal}-net`} readOnly value={gross === "" ? "" : net.toFixed(3)} className={readOnlyCls} />
-                  <span className="text-xs text-gray-500">{netHint}</span>
-                </>
-              ) : (
-                <input id={`${metal}-net`} type="number" inputMode="decimal" placeholder={t("calc.enterWeight")} value={netIn} onChange={(e) => setNetIn(e.target.value)} className={inputCls} />
-              )}
             </Field>
           </div>
 
