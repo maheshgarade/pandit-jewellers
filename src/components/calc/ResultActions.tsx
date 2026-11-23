@@ -110,7 +110,7 @@ export const ResultActions: React.FC<{
         <button type="button" aria-label={t("print.share")} title={t("print.share")} onClick={() => open("share")} className={`${iconBtn} border border-purple-300 bg-white text-purple-800`}>
           <Share2 className="h-6 w-6" />
         </button>
-        <button type="button" aria-label={t("print.whatsappGo")} title="WhatsApp" onClick={() => open("whatsapp")} className={`${iconBtn} bg-[#0f7a5c] text-white`}>
+        <button type="button" aria-label={t("print.whatsappGo")} title="WhatsApp" onClick={() => open("whatsapp")} className={`${iconBtn} bg-[#25D366] text-white hover:bg-[#1EBE57] active:bg-[#1EBE57]`}>
           <WhatsAppIcon className="h-7 w-7" />
         </button>
         <button type="button" aria-label={t("print.download")} title={t("print.download")} onClick={() => open("download")} className={`${iconBtn} border border-purple-300 bg-white text-purple-800`}>
@@ -158,7 +158,7 @@ export const ResultActions: React.FC<{
               type="button"
               onClick={go}
               disabled={busy}
-              className={`h-12 rounded-lg disabled:opacity-60 text-[15px] font-semibold text-white ${preview.action === "whatsapp" ? "bg-[#0f7a5c]" : "bg-purple-800"}`}
+              className={`h-12 rounded-lg disabled:opacity-60 text-[15px] font-semibold text-white ${preview.action === "whatsapp" ? "bg-[#25D366] hover:bg-[#1EBE57] active:bg-[#1EBE57]" : "bg-purple-800"}`}
             >
               {t(`print.${preview.action}Go`)}
             </button>
