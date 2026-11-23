@@ -58,6 +58,16 @@ export interface EstimateState {
   customer: Customer;
   /** Given on the first print, share or save, so reprints keep the same number. */
   no: number | null;
+  /** The saved customer this estimate is for (picked or added on the Estimate tab). */
+  customerId?: string;
+}
+/** An estimate kept after it was numbered (printed, shared or saved), for the customer's history. */
+export interface SavedEstimate {
+  no: number;
+  at: number;
+  customerId?: string;
+  estimate: EstimateState;
+  grand: number;
 }
 export interface SavedPrinter {
   address: string;
@@ -85,6 +95,7 @@ export interface AppState {
   billSeq: number;
   estimate: EstimateState;
   customers: SavedCustomer[];
+  history: SavedEstimate[];
 }
 
 export const EMPTY_ESTIMATE: EstimateState = { items: [], old: [], customer: { name: "", number: "", address: "" }, no: null };
@@ -128,6 +139,7 @@ const DEFAULT_STATE: AppState = {
   billSeq: 1,
   estimate: EMPTY_ESTIMATE,
   customers: [],
+  history: [],
 };
 
 const STORAGE_KEY = "pj-store-v1";

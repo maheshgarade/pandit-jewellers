@@ -96,6 +96,11 @@
     "customer": "Customer",
     "chooseCustomer": "Choose saved customer",
     "done": "Done",
+    "findCustomer": "Search customer by name or mobile",
+    "addNewCustomer": "Add new customer",
+    "changeCustomer": "Change customer",
+    "noEstimates": "No estimates yet.",
+    "estimates": "Estimates",
     "addItems": "Add items",
     "emptyHint": "Add items with Add item. They appear here as they will print. Use Buy to deduct old gold or silver."
   },
@@ -106,9 +111,14 @@
     "deleteConfirm": "Delete this customer?",
     "save": "Save",
     "saved": "Customer saved",
+    "est": "est.",
+    "item": "item",
+    "items": "items",
+    "oldItems": "old gold / silver",
+    "newEstimate": "New estimate",
     "search": "Search name, number or address",
     "none": "No customer matches.",
-    "emptyHint": "No customers yet. Add one here, or they are saved when you print or share their estimate."
+    "emptyHint": "No customers yet. Add one here, or when you make an estimate."
   },
   "comingSoon":"is currently under development. Please check back soon for this feature!"
 }

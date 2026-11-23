@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { EMPTY_ESTIMATE, EstimateState, useStore } from "@/lib/store";
 import { buildEstimate, drawEstimate, rupees } from "@/lib/receipt";
-import { upsertCustomer } from "@/lib/customers";
+import { recordEstimate } from "@/lib/customers";
 import { useLanguage } from "@/context/LanguageContext";
 import { EstimateView } from "./EstimateView";
 import { ResultActions } from "./ResultActions";
@@ -39,8 +39,8 @@ export const EstimatePanel: React.FC = () => {
         render={(n) => drawEstimate(est, state.shop, state.paper, n, state.layout, state.printShopDetails)}
         shareText={`${state.shop.name} - ${t("estimate.title")} ${no}: ${rupees(est.grand)}`}
         no={e.no}
-        // The first print / share numbers the estimate and saves its customer in the Customers tab.
-        onNumbered={(n) => update((s) => ({ ...s, estimate: { ...s.estimate, no: n }, customers: upsertCustomer(s.customers, s.estimate.customer) }))}
+        // The first print / share numbers the estimate, saves its customer and keeps it in their history.
+        onNumbered={(n) => update((s) => recordEstimate({ ...s, estimate: { ...s.estimate, no: n } }))}
       />
       <button type="button" onClick={() => setConfirmNew(true)} className={resetBtnCls}>
         {t("estimate.new")}
@@ -58,7 +58,8 @@ export const EstimatePanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  update((s) => ({ ...s, estimate: EMPTY_ESTIMATE }));
+                  // A numbered estimate is kept in the history as it ended, then cleared.
+                  update((s) => ({ ...recordEstimate(s), estimate: EMPTY_ESTIMATE }));
                   setConfirmNew(false);
                 }}
                 className="h-12 rounded-lg bg-rose-600 text-[15px] font-semibold text-white"

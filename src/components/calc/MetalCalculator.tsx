@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { EMPTY_ESTIMATE, EstimateState, formatINR, MakingType, makingText, Metal, Mode, rateKey, timeText, useStore } from "@/lib/store";
 import { money, type EstimateItem } from "@/lib/receipt";
+import { recordEstimate } from "@/lib/customers";
 import { useLanguage } from "@/context/LanguageContext";
 import { Field, inputCls, linkBtnCls, Modal, NumberInput, primaryBtnCls, resetBtnCls } from "./ui";
 import { PurityCombo } from "./PurityCombo";
@@ -166,9 +167,10 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
   };
 
   const addToEstimate = (it: EstimateItem, key: ListKey, fresh: boolean) => {
-    update((s) => {
-      // A new estimate keeps the customer details, which were typed for it.
-      const base: EstimateState = fresh ? { ...EMPTY_ESTIMATE, customer: s.estimate.customer } : s.estimate;
+    update((s0) => {
+      // Starting a new one: the printed estimate goes into the history first. The customer stays.
+      const s = fresh ? recordEstimate(s0) : s0;
+      const base: EstimateState = fresh ? { ...EMPTY_ESTIMATE, customer: s.estimate.customer, customerId: s.estimate.customerId } : s.estimate;
       return { ...s, estimate: { ...base, [key]: [...base[key], it] } };
     });
     clearItemFields();

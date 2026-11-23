@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Pencil, Phone, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, FileText, Pencil, Phone, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { Field, inputCls, Modal, primaryBtnCls } from "@/components/calc/ui";
-import { Customer, SavedCustomer, useStore } from "@/lib/store";
-import { estimateFor, upsertCustomer } from "@/lib/customers";
+import { ResultActions } from "@/components/calc/ResultActions";
+import { EstimateView } from "@/components/calc/EstimateView";
+import { Customer, SavedCustomer, SavedEstimate, useStore } from "@/lib/store";
+import { estimateFor, recordEstimate, searchCustomers, upsertCustomer } from "@/lib/customers";
+import { buildEstimate, drawEstimate, rupees } from "@/lib/receipt";
 import { useLanguage } from "@/context/LanguageContext";
 
 /** Customers tab: saved customers (also saved when their estimate is printed or shared), search, and Estimate. */
@@ -16,12 +19,13 @@ const CustomersPage: React.FC = () => {
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<SavedCustomer | "new" | null>(null);
   const [deleting, setDeleting] = useState<SavedCustomer | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<SavedEstimate | null>(null);
 
-  const query = q.trim().toLowerCase();
-  const list = state.customers.filter((c) => !query || c.name.toLowerCase().includes(query) || c.number.includes(query) || c.address.toLowerCase().includes(query));
+  const list = searchCustomers(state.customers, q);
 
   const startEstimate = (c: SavedCustomer) => {
-    update((s) => ({ ...s, estimate: estimateFor(s.estimate, c) }));
+    update((s) => ({ ...recordEstimate(s), estimate: estimateFor(s.estimate, c) }));
     navigate("/estimate");
   };
 
@@ -40,32 +44,74 @@ const CustomersPage: React.FC = () => {
         ) : null}
 
         <ul className="flex flex-col gap-2">
-          {list.map((c) => (
-            <li key={c.id} className="flex items-center gap-1 rounded-xl border border-purple-200 bg-white py-2 pl-4 pr-1 shadow-sm">
-              <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-[15px] font-semibold text-gray-900">{c.name || c.number}</span>
-                {c.name && c.number ? (
-                  <span className="flex items-center gap-1 text-sm text-gray-700">
-                    <Phone className="h-3.5 w-3.5" aria-hidden="true" /> {c.number}
+          {list.map((c) => {
+            const history = state.history.filter((h) => h.customerId === c.id);
+            const isOpen = open === c.id;
+            const who = c.name || c.number;
+            return (
+              <li key={c.id} className="overflow-hidden rounded-xl border border-purple-200 bg-white shadow-sm">
+                <button type="button" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : c.id)} className="flex min-h-16 w-full items-center gap-3 px-4 py-2 text-left">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-100 text-base font-bold text-purple-800" aria-hidden="true">
+                    {(who[0] || "?").toUpperCase()}
                   </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-[15px] font-semibold text-gray-900">{who}</span>
+                    {c.name && c.number ? (
+                      <span className="flex items-center gap-1 text-sm text-gray-700">
+                        <Phone className="h-3.5 w-3.5" aria-hidden="true" /> {c.number}
+                      </span>
+                    ) : null}
+                    {c.address ? <span className="truncate text-xs text-gray-600">{c.address}</span> : null}
+                  </span>
+                  <span className="shrink-0 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-semibold text-purple-800">
+                    {history.length} {t("customers.est")}
+                  </span>
+                  <ChevronDown className={`h-5 w-5 shrink-0 text-purple-700 transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+                </button>
+                {isOpen ? (
+                  <div className="border-t border-purple-100">
+                    <div className="flex items-center gap-1 px-3 py-2">
+                      <button type="button" onClick={() => startEstimate(c)} className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-purple-800 text-sm font-semibold text-white">
+                        <Plus className="h-4 w-4" aria-hidden="true" /> {t("customers.newEstimate")}
+                      </button>
+                      <button type="button" aria-label={`${t("customers.edit")} ${who}`} onClick={() => setEditing(c)} className="flex h-11 w-11 shrink-0 items-center justify-center text-purple-700">
+                        <Pencil className="h-[18px] w-[18px]" />
+                      </button>
+                      <button type="button" aria-label={`${t("customers.delete")} ${who}`} onClick={() => setDeleting(c)} className="flex h-11 w-11 shrink-0 items-center justify-center text-red-600">
+                        <Trash2 className="h-[18px] w-[18px]" />
+                      </button>
+                    </div>
+                    <h3 className="bg-purple-50 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-purple-900">{t("estimate.estimates")}</h3>
+                    {history.length ? (
+                      <ul>
+                        {history.map((h) => {
+                          const count = h.estimate.items.length || h.estimate.old.length;
+                          return (
+                            <li key={h.no}>
+                              <button type="button" onClick={() => setViewing(h)} className="flex min-h-12 w-full items-center gap-3 border-t border-purple-100 px-4 py-1.5 text-left first:border-t-0">
+                                <FileText className="h-4 w-4 shrink-0 text-purple-700" aria-hidden="true" />
+                                <span className="flex min-w-0 flex-1 flex-col">
+                                  <span className="text-sm font-semibold text-gray-900">
+                                    {t("estimate.title")} No: {h.no}
+                                  </span>
+                                  <span className="text-xs text-gray-600">
+                                    {new Date(h.at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} · {count} {h.estimate.items.length ? (count === 1 ? t("customers.item") : t("customers.items")) : t("customers.oldItems")}
+                                  </span>
+                                </span>
+                                <span className="whitespace-nowrap text-sm font-bold text-purple-900">{rupees(h.grand)}</span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="px-4 py-3 text-sm text-gray-600">{t("estimate.noEstimates")}</p>
+                    )}
+                  </div>
                 ) : null}
-                {c.address ? <span className="truncate text-xs text-gray-600">{c.address}</span> : null}
-              </div>
-              <button
-                type="button"
-                onClick={() => startEstimate(c)}
-                className="flex h-11 shrink-0 items-center gap-1 rounded-lg bg-purple-100 px-3 text-sm font-semibold text-purple-800"
-              >
-                <FileText className="h-4 w-4" aria-hidden="true" /> {t("menu.estimate")}
-              </button>
-              <button type="button" aria-label={`${t("customers.edit")} ${c.name || c.number}`} onClick={() => setEditing(c)} className="flex h-11 w-11 shrink-0 items-center justify-center text-purple-700">
-                <Pencil className="h-[18px] w-[18px]" />
-              </button>
-              <button type="button" aria-label={`${t("customers.delete")} ${c.name || c.number}`} onClick={() => setDeleting(c)} className="flex h-11 w-11 shrink-0 items-center justify-center text-red-600">
-                <Trash2 className="h-[18px] w-[18px]" />
-              </button>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
 
         {state.customers.length === 0 ? (
@@ -86,6 +132,29 @@ const CustomersPage: React.FC = () => {
             toast.success(t("customers.saved"));
           }}
         />
+      ) : null}
+
+      {viewing ? (
+        <div role="dialog" aria-modal="true" aria-label={`${t("estimate.title")} No: ${viewing.no}`} className="fixed inset-0 z-50 flex flex-col bg-gray-900/70">
+          <div className="flex items-center justify-between px-4 py-3 text-white">
+            <h2 className="text-[17px] font-bold">
+              {t("estimate.title")} No: {viewing.no}
+            </h2>
+            <button type="button" aria-label="Close" onClick={() => setViewing(null)} className="flex h-11 w-11 items-center justify-center">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            <EstimateView est={buildEstimate(viewing.estimate, state.roundOff)} shop={state.shop} no={viewing.no} layout={state.layout} shopDetails={state.printShopDetails} />
+          </div>
+          <div className="bg-white px-4 pb-5 pt-3">
+            <ResultActions
+              render={(n) => drawEstimate(buildEstimate(viewing.estimate, state.roundOff), state.shop, state.paper, n, state.layout, state.printShopDetails)}
+              shareText={`${state.shop.name} - ${t("estimate.title")} ${viewing.no}: ${rupees(viewing.grand)}`}
+              no={viewing.no}
+            />
+          </div>
+        </div>
       ) : null}
 
       {deleting ? (
