@@ -2,7 +2,6 @@ import React from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 // import ExchangeCalculator from "./ExchangeCalculator"; // Exchange tab hidden for now
 import { MetalCalculator } from "./calc/MetalCalculator";
-import { RatesBar } from "./calc/RatesBar";
 import { useLanguage } from "../context/LanguageContext";
 
 const tabCls =
@@ -13,7 +12,6 @@ const CalculatorsSection: React.FC<{ target?: "calculator" | "estimate" }> = ({ 
   const { t } = useLanguage();
   return (
     <div className={`flex flex-col gap-3 ${target === "calculator" ? "container mx-auto max-w-md px-4 py-2" : ""}`}>
-      <RatesBar />
       <Tabs defaultValue="gold" className="w-full">
         {/* Exchange tab hidden for now: restore with grid-cols-3 and the trigger/content below. */}
         <TabsList className="grid h-11 w-full grid-cols-2 bg-gradient-to-r from-purple-100 to-pink-100">

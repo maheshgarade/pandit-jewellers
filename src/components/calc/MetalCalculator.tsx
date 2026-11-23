@@ -67,13 +67,23 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
   const net = grossOn ? Math.max(0, num(gross) - (leftOn ? num(less) : 0)) : num(netIn);
   const hasWeight = grossOn ? gross !== "" : netIn !== "";
 
-  const rateOverridden = rateIn !== null && rateIn !== "" && num(rateIn) !== saved.rate;
   const makingOverridden =
     savedMaking.value !== null && ((makingIn !== null && num(makingIn) !== savedMaking.value) || (mTypeIn !== null && mTypeIn !== savedMaking.type));
 
   const saveRate = (value: number) => {
     update((s) => ({ ...s, rates: { ...s.rates, [rateKey(metal, mode)]: { rate: value, updatedAt: Date.now() } } }));
     setRateIn(null);
+  };
+  /**
+   * The rate field is the saved rate for this metal and mode, shared by the Calculator and Estimate tabs: typing
+   * here updates it for both. `rateIn` only keeps the text being typed (e.g. "6850.").
+   */
+  const typeRate = (v: string) => {
+    setRateIn(v);
+    const n = parseFloat(v);
+    if (v === "" || (!isNaN(n) && n >= 0)) {
+      update((s) => ({ ...s, rates: { ...s.rates, [rateKey(metal, mode)]: { rate: v === "" ? null : n, updatedAt: Date.now() } } }));
+    }
   };
   const saveMaking = (type: MakingType, value: number) => {
     update((s) => ({ ...s, making: { ...s.making, [metal]: { type, value } } }));
@@ -226,16 +236,11 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
                 id={`${metal}-rate`}
                 placeholder={t("calc.enterRate")}
                 value={rateVal}
-                onChange={(e) => setRateIn(e.target.value)}
+                onChange={(e) => typeRate(e.target.value)}
                 onIcon={() => setDialog("rate")}
                 iconSet={saved.rate !== null}
                 iconLabel={`${saved.rate !== null ? "Edit" : "Set"} ${metal} ${mode} rate`}
               />
-              {rateOverridden ? (
-                <button type="button" className={linkBtnCls} onClick={() => saveRate(num(rateIn!))}>
-                  {t("calc.saveAsTodayRate")}
-                </button>
-              ) : null}
             </Field>
             <Field id={`${metal}-net`} label={t("calc.netWeight")}>
               {grossOn ? (
@@ -415,7 +420,7 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
   );
 };
 
-/** Set / update one saved rate. Also used by the Today's rates strip. */
+/** Set / update one saved rate. */
 export const RateDialog: React.FC<{
   title: string;
   label: string;
