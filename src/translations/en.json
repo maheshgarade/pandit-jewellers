@@ -95,6 +95,7 @@
     "clear": "Clear",
     "customer": "Customer",
     "chooseCustomer": "Choose saved customer",
+    "done": "Done",
     "addItems": "Add items",
     "emptyHint": "Add items with Add item. They appear here as they will print. Use Buy to deduct old gold or silver."
   },

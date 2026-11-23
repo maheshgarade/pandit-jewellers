@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Users } from "lucide-react";
+import { Check, Pencil, UserRound, Users } from "lucide-react";
 import Layout from "@/components/Layout";
 import CalculatorsSection from "@/components/CalculatorsSection";
 import { EstimatePanel } from "@/components/calc/EstimatePanel";
@@ -16,6 +16,9 @@ export default function EstimatePage() {
   const { state, update } = useStore();
   const [picking, setPicking] = useState(false);
   const c = state.estimate.customer;
+  const hasCustomer = !!(c.name.trim() || c.number.trim());
+  // Customer details already there (e.g. coming back to the tab): show the small card.
+  const [editing, setEditing] = useState(!hasCustomer);
   const empty = !state.estimate.items.length && !state.estimate.old.length;
   const setCustomer = (k: keyof Customer, v: string) =>
     update((s) => ({ ...s, estimate: { ...s.estimate, customer: { ...s.estimate.customer, [k]: v } } }));
@@ -28,17 +31,28 @@ export default function EstimatePage() {
           {state.estimate.no !== null ? ` No: ${state.estimate.no}` : ""}
         </h1>
 
-        <section aria-labelledby="est-customer" className={cardCls}>
-          <div className="flex items-center justify-between gap-2">
-            <h2 id="est-customer" className="text-base font-bold text-purple-900">
-              {t("estimate.customer")}
-            </h2>
-            {state.customers.length ? (
-              <button type="button" onClick={() => setPicking(true)} className="flex min-h-11 items-center gap-1.5 px-1 text-sm font-semibold text-purple-700 underline">
-                <Users className="h-4 w-4" aria-hidden="true" /> {t("estimate.chooseCustomer")}
-              </button>
-            ) : null}
-          </div>
+        {hasCustomer && !editing ? (
+          // Filled in: a small card, ✎ to edit.
+          <section aria-label={t("estimate.customer")} className="flex items-center gap-3 rounded-xl border border-purple-200 bg-white py-2 pl-4 pr-1 shadow-sm">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-800">
+              <UserRound className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-[15px] font-semibold text-gray-900">{c.name || c.number}</span>
+              {c.name && c.number ? <span className="text-sm text-gray-700">{c.number}</span> : null}
+              {c.address ? <span className="truncate text-xs text-gray-600">{c.address}</span> : null}
+            </div>
+            <button type="button" aria-label={`${t("customers.edit")} ${c.name || c.number}`} onClick={() => setEditing(true)} className="flex h-11 w-11 shrink-0 items-center justify-center text-purple-700">
+              <Pencil className="h-[18px] w-[18px]" />
+            </button>
+          </section>
+        ) : (
+        <section aria-label={t("estimate.customer")} className={cardCls}>
+          {state.customers.length ? (
+            <button type="button" onClick={() => setPicking(true)} className="-mb-2 flex min-h-11 items-center gap-1.5 self-end px-1 text-sm font-semibold text-purple-700 underline">
+              <Users className="h-4 w-4" aria-hidden="true" /> {t("estimate.chooseCustomer")}
+            </button>
+          ) : null}
           <div className="grid grid-cols-2 gap-4">
             <Field id="est-cname" label={t("calc.customerName")}>
               <input id="est-cname" autoComplete="name" value={c.name} onChange={(e) => setCustomer("name", e.target.value)} className={inputCls} />
@@ -58,7 +72,13 @@ export default function EstimatePage() {
               <input id="est-caddr" autoComplete="street-address" value={c.address} onChange={(e) => setCustomer("address", e.target.value)} className={inputCls} />
             </Field>
           </div>
+          {hasCustomer ? (
+            <button type="button" onClick={() => setEditing(false)} className="flex h-11 items-center justify-center gap-1.5 rounded-lg bg-purple-800 text-[15px] font-semibold text-white">
+              <Check className="h-4 w-4" aria-hidden="true" /> {t("estimate.done")}
+            </button>
+          ) : null}
         </section>
+        )}
 
         <section aria-labelledby="est-add" className="flex flex-col gap-3">
           <h2 id="est-add" className="text-base font-bold text-purple-900">
@@ -78,6 +98,7 @@ export default function EstimatePage() {
           onPick={(p) => {
             update((s) => ({ ...s, estimate: estimateFor(s.estimate, p) }));
             setPicking(false);
+            setEditing(false);
           }}
         />
       ) : null}
