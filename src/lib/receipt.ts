@@ -1,4 +1,4 @@
-import type { DetailFields, EstimateState, Metal, PaperWidth, ShopDetails } from "./store";
+import type { EstimateState, Metal, PaperWidth, ShopDetails } from "./store";
 
 /** One item card on the estimate. Sold items carry the price breakdown; old gold / silver the fine-metal value. */
 export interface EstimateItem {
@@ -77,7 +77,7 @@ export const itemsHeading = (est: Estimate) => {
  * sold it is a purchase estimate of the old metal. The final amount is in whole rupees (nearest ₹10 with Round off
  * on) and the difference is shown as Round Off.
  */
-export function buildEstimate(e: EstimateState, details: DetailFields, roundTo10: boolean): Estimate {
+export function buildEstimate(e: EstimateState, roundTo10: boolean): Estimate {
   const sell = e.items.length > 0;
   const items = sell ? e.items : e.old;
   const itemsTotal = sum(items);
@@ -92,11 +92,7 @@ export function buildEstimate(e: EstimateState, details: DetailFields, roundTo10
   const c = e.customer;
   return {
     mode: sell ? "sell" : "buy",
-    customer: {
-      name: (details.customerName && c.name.trim()) || undefined,
-      number: (details.customerNumber && c.number.trim()) || undefined,
-      address: (details.customerAddress && c.address.trim()) || undefined,
-    },
+    customer: { name: c.name.trim() || undefined, number: c.number.trim() || undefined, address: c.address.trim() || undefined },
     items,
     itemsTotal,
     less,

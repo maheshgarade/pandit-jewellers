@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { EMPTY_ESTIMATE, EstimateState, useStore } from "@/lib/store";
 import { buildEstimate, drawEstimate, rupees } from "@/lib/receipt";
+import { upsertCustomer } from "@/lib/customers";
 import { useLanguage } from "@/context/LanguageContext";
 import { EstimateView } from "./EstimateView";
 import { ResultActions } from "./ResultActions";
 import { Modal, resetBtnCls } from "./ui";
 
-/** The estimate being built (the Gold and Silver tabs both add to it), with Print / Share / WhatsApp / Download. */
+/** The estimate being built, as it prints, with Print / Share / WhatsApp / Download and New estimate. */
 export const EstimatePanel: React.FC = () => {
   const { t } = useLanguage();
   const { state, update } = useStore();
@@ -14,7 +15,7 @@ export const EstimatePanel: React.FC = () => {
   const e = state.estimate;
   if (!e.items.length && !e.old.length) return null;
 
-  const est = buildEstimate(e, state.details, state.roundOff);
+  const est = buildEstimate(e, state.roundOff);
   const no = e.no ?? state.billSeq;
   const edit = (fn: (x: EstimateState) => EstimateState) => update((s) => ({ ...s, estimate: fn(s.estimate) }));
 
@@ -38,7 +39,8 @@ export const EstimatePanel: React.FC = () => {
         render={(n) => drawEstimate(est, state.shop, state.paper, n, state.layout, state.printShopDetails)}
         shareText={`${state.shop.name} - ${t("estimate.title")} ${no}: ${rupees(est.grand)}`}
         no={e.no}
-        onNumbered={(n) => edit((x) => ({ ...x, no: n }))}
+        // The first print / share numbers the estimate and saves its customer in the Customers tab.
+        onNumbered={(n) => update((s) => ({ ...s, estimate: { ...s.estimate, no: n }, customers: upsertCustomer(s.customers, s.estimate.customer) }))}
       />
       <button type="button" onClick={() => setConfirmNew(true)} className={resetBtnCls}>
         {t("estimate.new")}

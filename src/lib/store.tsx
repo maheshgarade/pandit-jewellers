@@ -34,18 +34,20 @@ export interface FieldSettings {
   "gold-buy": { grossLess: boolean; purity: boolean };
   "silver-sell": { gross: boolean; packet: boolean };
 }
-/** Optional estimate details, shown for every metal and mode when switched on in Settings. */
+/** Optional item fields on the Calculator, switched on in Settings. The Estimate tab always has them. */
 export interface DetailFields {
   itemName: boolean;
   productCode: boolean;
-  customerName: boolean;
-  customerNumber: boolean;
-  customerAddress: boolean;
 }
 export interface Customer {
   name: string;
   number: string;
   address: string;
+}
+/** A customer in the Customers tab. */
+export interface SavedCustomer extends Customer {
+  id: string;
+  updatedAt: number;
 }
 /** The estimate being built. Shared by the Gold and Silver tabs and kept until "New estimate". */
 export interface EstimateState {
@@ -80,6 +82,7 @@ export interface AppState {
   paper: PaperWidth;
   billSeq: number;
   estimate: EstimateState;
+  customers: SavedCustomer[];
 }
 
 export const EMPTY_ESTIMATE: EstimateState = { items: [], old: [], customer: { name: "", number: "", address: "" }, no: null };
@@ -111,7 +114,7 @@ const DEFAULT_STATE: AppState = {
     "gold-buy": { grossLess: false, purity: true },
     "silver-sell": { gross: false, packet: false },
   },
-  details: { itemName: false, productCode: false, customerName: false, customerNumber: false, customerAddress: false },
+  details: { itemName: false, productCode: false },
   roundOff: false,
   purities: DEFAULT_PURITIES,
   shop: { name: "Pandit Jewellers", address: "", phone: "", gstin: "", other: "", footer: "Thank you! Visit again." },
@@ -121,6 +124,7 @@ const DEFAULT_STATE: AppState = {
   paper: 58,
   billSeq: 1,
   estimate: EMPTY_ESTIMATE,
+  customers: [],
 };
 
 const STORAGE_KEY = "pj-store-v1";

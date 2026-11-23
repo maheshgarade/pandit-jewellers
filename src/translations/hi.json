@@ -11,7 +11,8 @@
   "menu": {
     "calculator": "कैलकुलेटर",
     "customers": "ग्राहक",
-    "shortlisted": "शॉर्टलिस्टेड"
+    "shortlisted": "शॉर्टलिस्टेड",
+    "estimate": "एस्टिमेट"
   },
   "gold": {
     "title": "सोने का मूल्य कैलकुलेटर",

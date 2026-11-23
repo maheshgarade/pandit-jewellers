@@ -23,7 +23,8 @@ const RemoveBtn: React.FC<{ label: string; onClick: () => void; className?: stri
   </button>
 );
 
-const ItemCard: React.FC<{ it: EstimateItem; no: number; mode: Estimate["mode"]; layout: PrintLayout; onRemove?: () => void }> = ({ it, no, mode, layout, onRemove }) => {
+/** One item card as printed. Also the Calculator's result card. */
+export const ItemCard: React.FC<{ it: EstimateItem; no: number; mode: Estimate["mode"]; layout: PrintLayout; onRemove?: () => void }> = ({ it, no, mode, layout, onRemove }) => {
   const { details, summary } = cardCells(it, mode, layout);
   return (
     <div className="flex flex-col gap-[3px] rounded border border-black px-[7px] py-[5px]">

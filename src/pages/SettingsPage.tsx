@@ -70,7 +70,7 @@ export default function SettingsPage() {
   };
 
   const showPreview = async () => {
-    const est = buildEstimate(SAMPLE, { ...state.details, customerName: true, customerNumber: true }, state.roundOff);
+    const est = buildEstimate(SAMPLE, state.roundOff);
     const c = await drawEstimate(est, state.shop, state.paper, state.billSeq, state.layout, state.printShopDetails);
     setPreview(c.toDataURL("image/png"));
   };
@@ -93,12 +93,9 @@ export default function SettingsPage() {
           <Switch on={f["silver-sell"].packet} onToggle={() => setField("silver-sell", "packet")} label="Packet Weight" hint="Used with Gross Weight" />
         </Card>
 
-        <Card title="Estimate details" hint="Optional fields for every metal and mode. Filled-in values are printed on the estimate.">
+        <Card title="Estimate details" hint="Extra item fields on the Calculator tab. The Estimate tab always has item name, product code and customer details.">
           <Switch on={state.details.itemName} onToggle={() => setDetail("itemName")} label="Item name" />
           <Switch on={state.details.productCode} onToggle={() => setDetail("productCode")} label="Product code" hint="Letters and numbers" />
-          <Switch on={state.details.customerName} onToggle={() => setDetail("customerName")} label="Customer name" />
-          <Switch on={state.details.customerNumber} onToggle={() => setDetail("customerNumber")} label="Customer number" />
-          <Switch on={state.details.customerAddress} onToggle={() => setDetail("customerAddress")} label="Customer address" />
           <Switch
             on={state.roundOff}
             onToggle={() => update((s) => ({ ...s, roundOff: !s.roundOff }))}

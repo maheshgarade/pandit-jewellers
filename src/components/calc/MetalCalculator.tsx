@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Customer, EMPTY_ESTIMATE, EstimateState, MakingType, makingText, Metal, Mode, rateKey, timeText, useStore } from "@/lib/store";
+import { EMPTY_ESTIMATE, EstimateState, MakingType, makingText, Metal, Mode, rateKey, timeText, useStore } from "@/lib/store";
 import { money, type EstimateItem } from "@/lib/receipt";
 import { useLanguage } from "@/context/LanguageContext";
 import { Field, inputCls, linkBtnCls, Modal, NumberInput, primaryBtnCls, readOnlyCls, resetBtnCls } from "./ui";
 import { PurityCombo } from "./PurityCombo";
+import { ItemCard } from "./EstimateView";
 
 const GST_RATE = 3;
 const num = (v: string) => {
@@ -18,13 +20,18 @@ type ListKey = "items" | "old";
 /**
  * Sell / Buy calculator for one metal. Shared rows sit in the same place in every mode:
  * row 1 = Rate | Net Weight (Net on the right for quick entry), row 2 = mode-specific, then Reset | Calculate.
- * Calculate adds the item to the estimate below, which both tabs share: Sell items are its cards, and Buy
- * (old gold / silver) is deducted from them, or printed on its own as a purchase estimate.
+ * On the Calculator tab, Calculate shows the item with "Add to estimate". On the Estimate tab ("estimate"), the
+ * button is "Add item" and adds it straight away. Sell items are the estimate's cards; Buy (old gold / silver) is
+ * deducted from them, or printed on its own as a purchase estimate.
  */
-export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
+export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "estimate" }> = ({ metal, target = "calculator" }) => {
   const { t } = useLanguage();
   const { state, update } = useStore();
+  const navigate = useNavigate();
+  const onEstimate = target === "estimate";
   const [mode, setMode] = useState<Mode>("sell");
+  /** Calculator tab: the calculated item, waiting for "Add to estimate". */
+  const [result, setResult] = useState<{ it: EstimateItem; key: ListKey } | null>(null);
 
   // Inputs. `null` overrides mean "use the saved value".
   const [netIn, setNetIn] = useState("");
@@ -74,13 +81,7 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
     setMTypeIn(null);
   };
 
-  // The customer belongs to the estimate, so both tabs show the same details.
-  const customer = state.estimate.customer;
-  const setCustomer = (k: keyof Customer, v: string) =>
-    update((s) => ({ ...s, estimate: { ...s.estimate, customer: { ...s.estimate.customer, [k]: v } } }));
-  const estimateEmpty = !state.estimate.items.length && !state.estimate.old.length;
-
-  /** Clears the item fields for the next item; rate, making, purity and customer stay. */
+  /** Clears the item fields for the next item; rate, making and purity stay. */
   const clearItemFields = () => {
     setNetIn("");
     setGross("");
@@ -96,12 +97,12 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
     setMakingIn(null);
     setMTypeIn(null);
     setPurity("91.6");
-    // Customer details are cleared with the estimate ("New estimate"), or here while nothing has been added yet.
-    if (estimateEmpty) update((s) => ({ ...s, estimate: { ...s.estimate, customer: EMPTY_ESTIMATE.customer } }));
+    setResult(null);
   };
 
-  const det = state.details;
-  const anyDetail = det.itemName || det.productCode || det.customerName || det.customerNumber || det.customerAddress;
+  // Item name and product code: always on the Estimate tab, switched on in Settings for the Calculator.
+  const showName = onEstimate || state.details.itemName;
+  const showCode = onEstimate || state.details.productCode;
 
   /** The item in the form, or null when weight or rate is missing. */
   const currentItem = (): EstimateItem | null => {
@@ -109,8 +110,8 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
     const rate = num(rateVal);
     const base: EstimateItem = {
       metal,
-      name: (det.itemName && itemName.trim()) || (mode === "sell" ? `${metalName} ${t("calc.defaultItem")}` : `${t("calc.oldItem")} ${metalName}`),
-      code: (det.productCode && productCode.trim()) || undefined,
+      name: (showName && itemName.trim()) || (mode === "sell" ? `${metalName} ${t("calc.defaultItem")}` : `${t("calc.oldItem")} ${metalName}`),
+      code: (showCode && productCode.trim()) || undefined,
       net,
       total: 0,
       ...(grossOn ? { gross: num(gross), less: leftOn ? num(less) : 0, lessLabel: isSilver ? "Packet Wt" : "Less Wt" } : {}),
@@ -146,7 +147,16 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
       return { ...s, estimate: { ...base, [key]: [...base[key], it] } };
     });
     clearItemFields();
-    toast.success(`${it.name}: ₹${money(it.total)} · ${t("calc.itemAdded")}`);
+    setResult(null);
+    const msg = `${it.name}: ₹${money(it.total)} · ${t("calc.itemAdded")}`;
+    if (onEstimate) toast.success(msg);
+    else toast.success(msg, { action: { label: t("menu.estimate"), onClick: () => navigate("/estimate") } });
+  };
+
+  /** Adds to the estimate, first asking when it has already been printed or shared. */
+  const add = (it: EstimateItem, key: ListKey) => {
+    if (state.estimate.no !== null) setPending({ it, key });
+    else addToEstimate(it, key, false);
   };
 
   const calculate = () => {
@@ -156,13 +166,14 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
       return;
     }
     const key: ListKey = mode === "sell" ? "items" : "old";
-    if (state.estimate.no !== null) setPending({ it, key });
-    else addToEstimate(it, key, false);
+    if (onEstimate) add(it, key);
+    else setResult({ it, key });
   };
 
   const switchMode = (m: Mode) => {
     setMode(m);
     setRateIn(null); // each mode shows its own saved rate
+    setResult(null);
   };
 
   const showForm = true;
@@ -289,14 +300,14 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
             </div>
           ) : null}
 
-          {anyDetail ? (
+          {showName || showCode ? (
             <div className="grid grid-cols-2 gap-4 border-t border-purple-100 pt-4">
-              {det.itemName ? (
+              {showName ? (
                 <Field id={`${metal}-item`} label={t("calc.itemName")}>
                   <input id={`${metal}-item`} value={itemName} onChange={(e) => setItemName(e.target.value)} className={inputCls} />
                 </Field>
               ) : null}
-              {det.productCode ? (
+              {showCode ? (
                 <Field id={`${metal}-code`} label={t("calc.productCode")}>
                   <input
                     id={`${metal}-code`}
@@ -307,29 +318,6 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
                   />
                 </Field>
               ) : null}
-              {det.customerName ? (
-                <Field id={`${metal}-cname`} label={t("calc.customerName")}>
-                  <input id={`${metal}-cname`} autoComplete="name" value={customer.name} onChange={(e) => setCustomer("name", e.target.value)} className={inputCls} />
-                </Field>
-              ) : null}
-              {det.customerNumber ? (
-                <Field id={`${metal}-cnum`} label={t("calc.customerNumber")}>
-                  <input
-                    id={`${metal}-cnum`}
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    value={customer.number}
-                    onChange={(e) => setCustomer("number", e.target.value.replace(/[^0-9+ ]/g, ""))}
-                    className={inputCls}
-                  />
-                </Field>
-              ) : null}
-              {det.customerAddress ? (
-                <Field id={`${metal}-caddr`} label={t("calc.customerAddress")} className="col-span-2">
-                  <input id={`${metal}-caddr`} autoComplete="street-address" value={customer.address} onChange={(e) => setCustomer("address", e.target.value)} className={inputCls} />
-                </Field>
-              ) : null}
             </div>
           ) : null}
 
@@ -338,11 +326,30 @@ export const MetalCalculator: React.FC<{ metal: Metal }> = ({ metal }) => {
               {t("gold.reset")}
             </button>
             <button type="button" onClick={calculate} className={`${primaryBtnCls} flex items-center justify-center gap-2`}>
-              {t("gold.calculate")} <ArrowRight className="h-4 w-4" />
+              {onEstimate ? (
+                <>
+                  <Plus className="h-4 w-4" /> {t("calc.addItem")}
+                </>
+              ) : (
+                <>
+                  {t("gold.calculate")} <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </button>
           </div>
         </section>
       )}
+
+      {result ? (
+        <section aria-label={t("calc.result")} className="flex flex-col gap-3 rounded-xl border border-purple-200 bg-white p-3 shadow-lg">
+          <div className="text-[11px] leading-snug text-black" style={{ fontFamily: "'Roboto Mono', 'Noto Sans Mono', ui-monospace, monospace" }}>
+            <ItemCard it={result.it} no={1} mode={result.key === "items" ? "sell" : "buy"} layout="detailed" />
+          </div>
+          <button type="button" onClick={() => add(result.it, result.key)} className={`${primaryBtnCls} flex items-center justify-center gap-2`}>
+            <Plus className="h-4 w-4" /> {t("calc.addToEstimate")}
+          </button>
+        </section>
+      ) : null}
 
       {pending ? (
         <Modal

@@ -11,7 +11,8 @@
   "menu": {
     "calculator": "Calculator",
     "customers": "Customers",
-    "shortlisted": "Shortlisted"
+    "shortlisted": "Shortlisted",
+    "estimate": "Estimate"
   },
   "gold": {
     "title": "Gold Price Calculator",
@@ -72,6 +73,9 @@
     "oldItem": "Old",
     "alreadyPrinted": "This estimate is already printed or shared. Add this item to it, or start a new estimate?",
     "addToIt": "Add to it",
+    "addItem": "Add item",
+    "addToEstimate": "Add to estimate",
+    "result": "Result",
     "roundOff": "Round off",
     "fineGold": "Fine Gold (100%)",
     "eq995": "Equivalent in 99.50",
@@ -86,7 +90,22 @@
     "title": "Estimate",
     "new": "New estimate",
     "newConfirm": "Clear all items, old gold and customer details from this estimate?",
-    "clear": "Clear"
+    "clear": "Clear",
+    "customer": "Customer",
+    "chooseCustomer": "Choose saved customer",
+    "addItems": "Add items",
+    "emptyHint": "Add items with Add item. They appear here as they will print. Use Buy to deduct old gold or silver."
+  },
+  "customers": {
+    "add": "Add customer",
+    "edit": "Edit customer",
+    "delete": "Delete customer",
+    "deleteConfirm": "Delete this customer?",
+    "save": "Save",
+    "saved": "Customer saved",
+    "search": "Search name, number or address",
+    "none": "No customer matches.",
+    "emptyHint": "No customers yet. Add one here, or they are saved when you print or share their estimate."
   },
   "comingSoon":"is currently under development. Please check back soon for this feature!"
 }

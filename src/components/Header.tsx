@@ -4,12 +4,13 @@ import { ChevronLeft, Settings } from "lucide-react";
 import LanguageSelector from "../components/LanguageSelector";
 import { useLanguage } from "../context/LanguageContext";
 import { useStore } from "@/lib/store";
+import { MAIN_PATHS } from "./BottomMenu";
 
 const Header: React.FC = () => {
   const { t } = useLanguage();
   const { state } = useStore();
   const { pathname } = useLocation();
-  const onHome = pathname === "/";
+  const onHome = MAIN_PATHS.includes(pathname); // the bottom tabs: no back button
   const back = pathname.startsWith("/settings/") ? "/settings" : "/";
 
   return (
