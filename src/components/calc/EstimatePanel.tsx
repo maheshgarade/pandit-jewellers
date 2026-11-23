@@ -24,7 +24,8 @@ export const EstimatePanel: React.FC = () => {
   const e = state.estimate;
   if (!e.items.length && !e.old.length) return null;
 
-  const est = buildEstimate(e, state.roundOff);
+  // Until it is first printed the estimate shows the current Profile name; after that, the one it was printed with.
+  const est = buildEstimate({ ...e, salesman: e.salesman ?? state.salesman }, state.roundOff);
   const no = e.no ?? state.billSeq;
   const edit = (fn: (x: EstimateState) => EstimateState) => update((s) => ({ ...s, estimate: fn(s.estimate) }));
   const itemAt = (r: Ref) => e[r.key][r.index];
@@ -107,7 +108,7 @@ export const EstimatePanel: React.FC = () => {
         shareText={`${state.shop.name} - ${t("estimate.title")} ${no}: ${rupees(est.grand)}`}
         no={e.no}
         // The first print / share numbers the estimate, saves its customer and keeps it in their history.
-        onNumbered={(n) => update((s) => recordEstimate({ ...s, estimate: { ...s.estimate, no: n } }))}
+        onNumbered={(n) => update((s) => recordEstimate({ ...s, estimate: { ...s.estimate, no: n, salesman: s.estimate.salesman ?? s.salesman } }))}
       />
       <button type="button" onClick={() => setConfirmNew(true)} className={resetBtnCls}>
         {t("estimate.new")}

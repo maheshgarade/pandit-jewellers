@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
 import type { EstimateItem, PrintLayout } from "./receipt";
+import { DEFAULT_PRODUCTS, type ProductCategory } from "./products";
 
 export type Metal = "gold" | "silver";
 export type Mode = "sell" | "buy";
@@ -60,6 +61,8 @@ export interface EstimateState {
   no: number | null;
   /** The saved customer this estimate is for (picked or added on the Estimate tab). */
   customerId?: string;
+  /** Who made it: the Profile name when it was first printed / shared (then kept with it). */
+  salesman?: string;
 }
 /** An estimate kept after it was numbered (printed, shared or saved), for the customer's history. */
 export interface SavedEstimate {
@@ -96,6 +99,10 @@ export interface AppState {
   estimate: EstimateState;
   customers: SavedCustomer[];
   history: SavedEstimate[];
+  /** Product master (Settings): parent categories and their products, picked as item names. */
+  products: ProductCategory[];
+  /** Profile: the user's name, printed at the bottom of estimates as "Salesman: <name>". */
+  salesman: string;
 }
 
 export const EMPTY_ESTIMATE: EstimateState = { items: [], old: [], customer: { name: "", number: "", address: "" }, no: null };
@@ -140,6 +147,8 @@ const DEFAULT_STATE: AppState = {
   estimate: EMPTY_ESTIMATE,
   customers: [],
   history: [],
+  products: DEFAULT_PRODUCTS,
+  salesman: "",
 };
 
 const STORAGE_KEY = "pj-store-v1";

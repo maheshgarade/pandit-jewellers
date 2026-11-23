@@ -97,6 +97,8 @@
     "chooseCustomer": "Choose saved customer",
     "done": "Done",
     "findCustomer": "Search customer by name or mobile",
+    "searchOrType": "Search or type",
+    "savedCustomers": "Saved customers",
     "items": "Items",
     "oldMetal": "Old gold / silver",
     "itemsTotal": "Items total",
@@ -112,6 +114,15 @@
     "estimates": "Estimates",
     "addItems": "Add items",
     "emptyHint": "Add items with Add item. They appear here as they will print. Use Buy to deduct old gold or silver."
+  },
+  "products": {
+    "choose": "Search products",
+    "back": "Back to categories",
+    "search": "Search product or category",
+    "useText": "Use",
+    "product": "product",
+    "products": "products",
+    "categories": "Product (tap a category)"
   },
   "customers": {
     "add": "Add customer",

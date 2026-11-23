@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from "react";
-import { ArrowRight, Plus } from "lucide-react";
+import { ArrowRight, Plus, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { EMPTY_ESTIMATE, EstimateState, formatINR, MakingType, makingText, Metal, Mode, rateKey, timeText, useStore } from "@/lib/store";
 import { money, type EstimateItem } from "@/lib/receipt";
 import { recordEstimate } from "@/lib/customers";
 import { computeItem } from "@/lib/items";
+import { ProductPicker } from "./ProductPicker";
+import { ProductQuickPick } from "./ProductQuickPick";
 import { useLanguage } from "@/context/LanguageContext";
 import { Field, inputCls, linkBtnCls, Modal, NumberInput, primaryBtnCls, resetBtnCls } from "./ui";
 import { PurityCombo } from "./PurityCombo";
@@ -51,6 +53,7 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
   /** An item waiting for "add it to the estimate already printed, or start a new one?" */
   const [pending, setPending] = useState<{ it: EstimateItem; key: ListKey } | null>(null);
   const [dialog, setDialog] = useState<null | "rate" | "making">(null);
+  const [pickingProduct, setPickingProduct] = useState(false);
 
   const saved = state.rates[rateKey(metal, mode)];
   const savedMaking = state.making[metal];
@@ -344,9 +347,21 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
 
           {showName || showCode ? (
             <div className="grid grid-cols-2 gap-4 border-t border-purple-100 pt-4">
+              {onEstimate && mode === "sell" ? <ProductQuickPick value={itemName} onPick={setItemName} /> : null}
               {showName ? (
                 <Field id={`${metal}-item`} label={t("calc.itemName")}>
-                  <input id={`${metal}-item`} value={itemName} onChange={(e) => setItemName(e.target.value)} className={inputCls} />
+                  {/* Type a name, or tap search to pick from the Product master. */}
+                  <div className="relative">
+                    <input id={`${metal}-item`} value={itemName} onChange={(e) => setItemName(e.target.value)} className={`${inputCls} pr-11`} />
+                    <button
+                      type="button"
+                      aria-label={t("products.choose")}
+                      onClick={() => setPickingProduct(true)}
+                      className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center text-purple-700"
+                    >
+                      <Search className="h-[18px] w-[18px]" />
+                    </button>
+                  </div>
                 </Field>
               ) : null}
               {showCode ? (
@@ -415,6 +430,16 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
         >
           <p className="text-sm leading-relaxed text-gray-700">{t("calc.alreadyPrinted")}</p>
         </Modal>
+      ) : null}
+
+      {pickingProduct ? (
+        <ProductPicker
+          onClose={() => setPickingProduct(false)}
+          onPick={(name) => {
+            setItemName(name);
+            setPickingProduct(false);
+          }}
+        />
       ) : null}
 
       {dialog === "rate" ? (

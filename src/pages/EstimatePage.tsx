@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { Check, Pencil, Search, UserPlus, UserRound, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Pencil, UserRound, X } from "lucide-react";
 import Layout from "@/components/Layout";
 import CalculatorsSection from "@/components/CalculatorsSection";
 import { EstimatePanel } from "@/components/calc/EstimatePanel";
 import { Field, inputCls } from "@/components/calc/ui";
-import { Customer, EMPTY_ESTIMATE, useStore } from "@/lib/store";
+import { Customer, EMPTY_ESTIMATE, SavedCustomer, useStore } from "@/lib/store";
 import { estimateFor, recordEstimate, saveEstimateCustomer, searchCustomers } from "@/lib/customers";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -38,58 +38,42 @@ export default function EstimatePage() {
   );
 }
 
-const digitsOnly = (s: string) => /^[\d+ ]+$/.test(s.trim());
-
 /**
- * The estimate's customer: search saved customers (dropdown); none found → add them, saved straight away. Once
- * chosen it shows as a small card with Edit and Change.
+ * The estimate's customer. Name and Mobile search the saved customers as you type: pick one to fill everything,
+ * or just keep typing (a new customer, saved once the first item is added). Then it shows as a small card.
  */
 const CustomerBox: React.FC = () => {
   const { t } = useLanguage();
   const { state, update } = useStore();
   const c = state.estimate.customer;
   const hasCustomer = !!(c.name.trim() || c.number.trim());
-  const [q, setQ] = useState("");
-  const [form, setForm] = useState<Customer | null>(null); // adding or editing
+  const hasItems = state.estimate.items.length + state.estimate.old.length > 0;
+  const [editing, setEditing] = useState(!hasCustomer || !hasItems);
+  const [focus, setFocus] = useState<"name" | "number" | null>(null);
 
-  if (form) {
-    const ok = !!(form.name.trim() || form.number.trim());
-    const set = (k: keyof Customer, v: string) => setForm({ ...form, [k]: v });
-    return (
-      <section aria-label={t("estimate.customer")} className="flex flex-col gap-4 rounded-xl border border-purple-200 bg-white p-4 shadow-lg">
-        <div className="grid grid-cols-2 gap-4">
-          <Field id="est-cname" label={t("calc.customerName")}>
-            <input id="est-cname" autoComplete="name" value={form.name} onChange={(e) => set("name", e.target.value)} className={inputCls} />
-          </Field>
-          <Field id="est-cnum" label={t("calc.customerNumber")}>
-            <input id="est-cnum" type="tel" inputMode="tel" autoComplete="tel" value={form.number} onChange={(e) => set("number", e.target.value.replace(/[^0-9+ ]/g, ""))} className={inputCls} />
-          </Field>
-          <Field id="est-caddr" label={t("calc.customerAddress")} className="col-span-2">
-            <input id="est-caddr" autoComplete="street-address" value={form.address} onChange={(e) => set("address", e.target.value)} className={inputCls} />
-          </Field>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => setForm(null)} className="h-11 rounded-lg border border-gray-300 text-[15px] text-gray-700">
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={!ok}
-            onClick={() => {
-              update((s) => saveEstimateCustomer(s, form));
-              setForm(null);
-              setQ("");
-            }}
-            className="flex h-11 items-center justify-center gap-1.5 rounded-lg bg-purple-800 text-[15px] font-semibold text-white disabled:opacity-50"
-          >
-            <Check className="h-4 w-4" aria-hidden="true" /> {t("customers.save")}
-          </button>
-        </div>
-      </section>
-    );
-  }
+  // The first item added: save the customer (first time: added to Customers) and fold the fields into the card.
+  useEffect(() => {
+    if (hasItems && hasCustomer && editing && focus === null) {
+      update((s) => saveEstimateCustomer(s));
+      setEditing(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasItems]);
 
-  if (hasCustomer) {
+  // Editing keeps the link to a picked customer (their record is updated); clearing name and mobile drops it.
+  const setField = (k: keyof Customer, v: string) =>
+    update((s) => {
+      const customer = { ...s.estimate.customer, [k]: v };
+      const keep = customer.name.trim() || customer.number.trim();
+      return { ...s, estimate: { ...s.estimate, customer, customerId: keep ? s.estimate.customerId : undefined } };
+    });
+  const pick = (m: SavedCustomer) => {
+    update((s) => ({ ...recordEstimate(s), estimate: estimateFor(s.estimate, m) }));
+    setFocus(null);
+    setEditing(false);
+  };
+
+  if (hasCustomer && !editing) {
     return (
       <section aria-label={t("estimate.customer")} className="flex items-center gap-2 rounded-xl border border-purple-200 bg-white py-2 pl-4 pr-1 shadow-sm">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-800">
@@ -100,20 +84,21 @@ const CustomerBox: React.FC = () => {
           {c.name && c.number ? <span className="text-sm text-gray-700">{c.number}</span> : null}
           {c.address ? <span className="truncate text-xs text-gray-600">{c.address}</span> : null}
         </div>
-        <button type="button" aria-label={`${t("customers.edit")} ${c.name || c.number}`} onClick={() => setForm({ ...c })} className="flex h-11 w-11 shrink-0 items-center justify-center text-purple-700">
+        <button type="button" aria-label={`${t("customers.edit")} ${c.name || c.number}`} onClick={() => setEditing(true)} className="flex h-11 w-11 shrink-0 items-center justify-center text-purple-700">
           <Pencil className="h-[18px] w-[18px]" />
         </button>
         <button
           type="button"
           aria-label={t("estimate.changeCustomer")}
-          onClick={() =>
+          onClick={() => {
             update((s) =>
               // A printed / shared estimate stays with its customer (kept in their history); a new one starts.
               s.estimate.no !== null
                 ? { ...recordEstimate(s), estimate: EMPTY_ESTIMATE }
                 : { ...s, estimate: { ...s.estimate, customer: EMPTY_ESTIMATE.customer, customerId: undefined } }
-            )
-          }
+            );
+            setEditing(true);
+          }}
           className="flex h-11 w-11 shrink-0 items-center justify-center text-gray-600"
         >
           <X className="h-[18px] w-[18px]" />
@@ -122,56 +107,78 @@ const CustomerBox: React.FC = () => {
     );
   }
 
-  const matches = q.trim() ? searchCustomers(state.customers, q).slice(0, 6) : [];
-  const startAdd = () => setForm({ name: digitsOnly(q) ? "" : q.trim(), number: digitsOnly(q) ? q.trim() : "", address: "" });
+  const query = focus === "name" ? c.name : focus === "number" ? c.number : "";
+  const matches = query.trim() && !state.estimate.customerId ? searchCustomers(state.customers, query).slice(0, 5) : [];
+  const suggestions = matches.length ? (
+    <ul role="listbox" aria-label={t("estimate.savedCustomers")} className="col-span-2 -mt-2 overflow-hidden rounded-xl border border-purple-200 bg-white shadow-lg">
+      {matches.map((m) => (
+        <li key={m.id} role="option" aria-selected="false">
+          {/* onMouseDown so the pick lands before the field loses focus. */}
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              pick(m);
+            }}
+            onClick={() => pick(m)}
+            className="flex min-h-12 w-full flex-col justify-center border-b border-purple-100 px-4 py-1.5 text-left last:border-b-0 active:bg-purple-50"
+          >
+            <span className="text-[15px] font-semibold text-gray-900">{m.name || m.number}</span>
+            <span className="text-xs text-gray-600">{[m.name ? m.number : "", m.address].filter(Boolean).join(" · ")}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  ) : null;
+
   return (
-    <section aria-label={t("estimate.customer")} className="relative flex flex-col gap-1">
-      <label htmlFor="est-csearch" className="sr-only">
-        {t("estimate.findCustomer")}
-      </label>
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" aria-hidden="true" />
+    <section aria-label={t("estimate.customer")} className="grid grid-cols-2 gap-4 rounded-xl border border-purple-200 bg-white p-4 shadow-lg">
+      <Field id="est-cname" label={t("calc.customerName")}>
         <input
-          id="est-csearch"
+          id="est-cname"
           role="combobox"
-          aria-expanded={!!q.trim()}
-          aria-controls="est-clist"
+          aria-expanded={focus === "name" && matches.length > 0}
           autoComplete="off"
-          placeholder={t("estimate.findCustomer")}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          className={`${inputCls} h-12 pl-9`}
+          placeholder={t("estimate.searchOrType")}
+          value={c.name}
+          onFocus={() => setFocus("name")}
+          onBlur={() => setFocus(null)}
+          onChange={(e) => setField("name", e.target.value)}
+          className={inputCls}
         />
-      </div>
-      {q.trim() ? (
-        <ul id="est-clist" role="listbox" className="overflow-hidden rounded-xl border border-purple-200 bg-white shadow-lg">
-          {matches.map((m) => (
-            <li key={m.id} role="option" aria-selected="false">
-              <button
-                type="button"
-                onClick={() => {
-                  update((s) => ({ ...recordEstimate(s), estimate: estimateFor(s.estimate, m) }));
-                  setQ("");
-                }}
-                className="flex min-h-12 w-full flex-col justify-center border-b border-purple-100 px-4 py-1.5 text-left active:bg-purple-50"
-              >
-                <span className="text-[15px] font-semibold text-gray-900">{m.name || m.number}</span>
-                <span className="text-xs text-gray-600">{[m.name ? m.number : "", m.address].filter(Boolean).join(" · ")}</span>
-              </button>
-            </li>
-          ))}
-          {matches.length === 0 ? <li className="px-4 pt-3 text-sm text-gray-600">{t("customers.none")}</li> : null}
-          <li>
-            <button type="button" onClick={startAdd} className="flex min-h-12 w-full items-center gap-2 px-4 text-left text-[15px] font-semibold text-purple-800">
-              <UserPlus className="h-4 w-4" aria-hidden="true" /> {t("estimate.addNewCustomer")} “{q.trim()}”
-            </button>
-          </li>
-        </ul>
-      ) : (
-        <button type="button" onClick={startAdd} className="flex min-h-11 items-center gap-1.5 self-start px-1 text-sm font-semibold text-purple-700 underline">
-          <UserPlus className="h-4 w-4" aria-hidden="true" /> {t("estimate.addNewCustomer")}
+      </Field>
+      <Field id="est-cnum" label={t("calc.customerNumber")}>
+        <input
+          id="est-cnum"
+          role="combobox"
+          aria-expanded={focus === "number" && matches.length > 0}
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          placeholder={t("estimate.searchOrType")}
+          value={c.number}
+          onFocus={() => setFocus("number")}
+          onBlur={() => setFocus(null)}
+          onChange={(e) => setField("number", e.target.value.replace(/[^0-9+ ]/g, ""))}
+          className={inputCls}
+        />
+      </Field>
+      {suggestions}
+      <Field id="est-caddr" label={t("calc.customerAddress")} className="col-span-2">
+        <input id="est-caddr" autoComplete="street-address" value={c.address} onChange={(e) => setField("address", e.target.value)} className={inputCls} />
+      </Field>
+      {hasCustomer && hasItems ? (
+        <button
+          type="button"
+          onClick={() => {
+            update((s) => saveEstimateCustomer(s));
+            setEditing(false);
+          }}
+          className="col-span-2 h-11 rounded-lg bg-purple-800 text-[15px] font-semibold text-white"
+        >
+          {t("estimate.done")}
         </button>
-      )}
+      ) : null}
     </section>
   );
 };

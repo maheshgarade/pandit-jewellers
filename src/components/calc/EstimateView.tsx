@@ -132,6 +132,7 @@ export const EstimateView: React.FC<{
         <span>{est.payLabel}</span>
         <span>{rupees(est.grand)}</span>
       </div>
+      {est.salesman ? <div className="text-[10px]">Salesman: {est.salesman}</div> : null}
       {shopDetails && shop.footer ? <div className="text-center text-[10px]">{shop.footer}</div> : null}
     </section>
   );

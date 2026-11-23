@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Calculator, ChevronDown, ChevronRight, FileText, Gem, IndianRupee, Printer as PrinterIcon, Store, X } from "lucide-react";
+import { Calculator, ChevronDown, ChevronRight, FileText, Gem, IndianRupee, Package, Printer as PrinterIcon, Store, UserRound, X } from "lucide-react";
+import { ProductMaster } from "@/components/ProductMaster";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { inputCls, Switch } from "@/components/calc/ui";
@@ -126,7 +127,7 @@ export default function SettingsPage() {
   };
 
   const showPreview = async () => {
-    const est = buildEstimate(SAMPLE, state.roundOff);
+    const est = buildEstimate({ ...SAMPLE, salesman: state.salesman }, state.roundOff);
     const c = await drawEstimate(est, state.shop, state.paper, state.billSeq, state.layout, state.printShopDetails);
     setPreview(c.toDataURL("image/png"));
   };
@@ -146,6 +147,16 @@ export default function SettingsPage() {
     <Layout>
       <div className="container mx-auto flex max-w-md flex-col gap-3 px-4 py-4">
         <h1 className="text-xl font-bold text-purple-900">Settings</h1>
+
+        <Section id="profile" icon={UserRound} title="Profile" summary={state.salesman ? `Salesman: ${state.salesman}` : "Add your name"} open={open === "profile"} onToggle={() => toggle("profile")}>
+          <Hint>Your name prints at the bottom of each estimate as “Salesman: name”.</Hint>
+          <div className="flex flex-col gap-1 px-4 pb-4">
+            <label htmlFor="profile-name" className="text-[13px] font-medium text-purple-800">
+              Your name
+            </label>
+            <input id="profile-name" autoComplete="name" value={state.salesman} placeholder="e.g. Prasad" onChange={(e) => update((s) => ({ ...s, salesman: e.target.value }))} className={inputCls} />
+          </div>
+        </Section>
 
         <Section id="printer" icon={PrinterIcon} title="Printer" summary={`${state.printer?.name ?? "No printer"} · ${paper} paper`} open={open === "printer"} onToggle={() => toggle("printer")}>
           <Link to="/settings/printer" className="flex min-h-16 items-center gap-3 px-4 py-2">
@@ -255,6 +266,18 @@ export default function SettingsPage() {
           <Sub>Calculator tab</Sub>
           <Switch on={state.details.itemName} onToggle={() => setDetail("itemName")} label="Item name" />
           <Switch on={state.details.productCode} onToggle={() => setDetail("productCode")} label="Product code" hint="Letters and numbers" />
+        </Section>
+
+        <Section
+          id="products"
+          icon={Package}
+          title="Product master"
+          summary={`${state.products.length} categories · ${state.products.reduce((a, c) => a + c.products.length, 0)} products`}
+          open={open === "products"}
+          onToggle={() => toggle("products")}
+        >
+          <Hint>Picked as item names on the Estimate tab. Names only: no prices or weights.</Hint>
+          <ProductMaster />
         </Section>
 
         <Section id="purity" icon={Gem} title="Purity list" summary={`${state.purities.length} purities for Gold Buy`} open={open === "purity"} onToggle={() => toggle("purity")}>

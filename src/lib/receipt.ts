@@ -40,6 +40,8 @@ export interface Estimate {
   /** The final amount in whole rupees, always positive: payLabel says which way it goes. */
   grand: number;
   payLabel: string;
+  /** Printed at the bottom as "Salesman: <name>" when set. */
+  salesman?: string;
 }
 
 export type PrintLayout = "detailed" | "compact";
@@ -102,6 +104,7 @@ export function buildEstimate(e: EstimateState, roundTo10: boolean): Estimate {
     roundOff: r2(grand - amount),
     grand,
     payLabel: sell && net >= 0 ? "NET PAYABLE" : "AMOUNT TO PAY",
+    salesman: e.salesman?.trim() || undefined,
   };
 }
 
@@ -349,6 +352,12 @@ export async function drawEstimate(
   text(rupees(est.grand), W - P, y, "right");
   gap(26);
   rule(true);
+  if (est.salesman) {
+    gap(8);
+    font(10);
+    text(`Salesman: ${est.salesman}`, P, y);
+    y += 10 * 1.4 * s;
+  }
   if (shopDetails && shop.footer) {
     gap(10);
     centerLines(shop.footer, 10);
