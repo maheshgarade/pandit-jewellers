@@ -16,18 +16,16 @@ export default function EstimatePage() {
 
   return (
     <Layout>
-      <div className="container mx-auto flex max-w-md flex-col gap-4 px-4 py-4">
-        <h1 className="text-xl font-bold text-purple-900">
+      <div className="container mx-auto flex max-w-md flex-col gap-3 px-4 py-3">
+        {/* Headings hidden to save room; still announced by screen readers. */}
+        <h1 className="sr-only">
           {t("estimate.title")}
           {state.estimate.no !== null ? ` No: ${state.estimate.no}` : ""}
         </h1>
 
         <CustomerBox />
 
-        <section aria-labelledby="est-add" className="flex flex-col gap-3">
-          <h2 id="est-add" className="text-base font-bold text-purple-900">
-            {t("estimate.addItems")}
-          </h2>
+        <section aria-label={t("estimate.addItems")}>
           <CalculatorsSection target="estimate" />
         </section>
 
