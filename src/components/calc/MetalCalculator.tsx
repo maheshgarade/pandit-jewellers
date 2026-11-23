@@ -2,12 +2,11 @@ import React, { useMemo, useState } from "react";
 import { ArrowRight, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { EMPTY_ESTIMATE, EstimateState, MakingType, makingText, Metal, Mode, rateKey, timeText, useStore } from "@/lib/store";
+import { EMPTY_ESTIMATE, EstimateState, formatINR, MakingType, makingText, Metal, Mode, rateKey, timeText, useStore } from "@/lib/store";
 import { money, type EstimateItem } from "@/lib/receipt";
 import { useLanguage } from "@/context/LanguageContext";
 import { Field, inputCls, linkBtnCls, Modal, NumberInput, primaryBtnCls, resetBtnCls } from "./ui";
 import { PurityCombo } from "./PurityCombo";
-import { ItemCard } from "./EstimateView";
 
 const GST_RATE = 3;
 const num = (v: string) => {
@@ -16,6 +15,11 @@ const num = (v: string) => {
 };
 const r2 = (n: number) => Math.round(n * 100) / 100;
 type ListKey = "items" | "old";
+/** The Calculator tab's single result. */
+type CalcResult = { it: EstimateItem; key: ListKey; name: string; making: string; rateText: string };
+type Row = { label: string; value: string };
+const grams = (n: number) => `${n.toFixed(3)} g`;
+const rupees = (n: number) => `₹ ${formatINR(n)}`;
 
 /**
  * Sell / Buy calculator for one metal. Shared rows sit in the same place in every mode:
@@ -31,7 +35,7 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
   const onEstimate = target === "estimate";
   const [mode, setMode] = useState<Mode>("sell");
   /** Calculator tab: the calculated item, waiting for "Add to estimate". */
-  const [result, setResult] = useState<{ it: EstimateItem; key: ListKey } | null>(null);
+  const [result, setResult] = useState<CalcResult | null>(null);
 
   // Inputs. `null` overrides mean "use the saved value".
   const [netIn, setNetIn] = useState("");
@@ -188,7 +192,53 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
     }
     const key: ListKey = mode === "sell" ? "items" : "old";
     if (onEstimate) add(it, key);
-    else setResult({ it, key });
+    else setResult({ it, key, name: showName ? itemName.trim() : "", making: makingText(mType, num(makingVal)), rateText: `₹ ${rateVal} ${per10 ? "/ 10 g" : "/ g"}` });
+  };
+
+  /** The Calculator's result card, as before the Estimate tab: breakdown, then the total (Round off: nearest ₹10). */
+  const billRows = (r: CalcResult, metalLabel: string) => {
+    const it = r.it;
+    const details: Row[] = [
+      r.name ? { label: t("calc.itemName"), value: r.name } : null,
+      it.code ? { label: t("calc.productCode"), value: it.code } : null,
+    ].filter((x): x is Row => x !== null);
+    const weights: Row[] = [
+      ...(it.gross !== undefined ? [{ label: t("calc.grossWeight"), value: grams(it.gross) }, { label: it.lessLabel === "Packet Wt" ? t("calc.packetWeight") : t("calc.lessWeight"), value: grams(it.less ?? 0) }] : []),
+      { label: t("calc.netWeight"), value: grams(it.net) },
+    ];
+    let rows: Row[];
+    if (r.key === "items") {
+      const sub = (it.price ?? 0) + (it.making ?? 0) + (it.other ?? 0);
+      rows = [
+        ...weights,
+        { label: `${metalLabel} ${t("calc.price")}`, value: rupees(it.price ?? 0) },
+        { label: `${t("calc.making")} (${r.making})`, value: rupees(it.making ?? 0) },
+        ...(isSilver ? [] : [{ label: t("calc.otherCharges"), value: rupees(it.other ?? 0) }]),
+        { label: t("gold.receipt.subtotal"), value: rupees(sub) },
+        { label: t("gold.receipt.gst"), value: rupees(it.gst ?? 0) },
+      ];
+    } else {
+      rows = [
+        ...weights,
+        ...(it.fine !== undefined
+          ? [
+              ...(it.purity ? [{ label: t("calc.purity"), value: it.purity }] : []),
+              { label: t("calc.fineGold"), value: grams(it.fine) },
+              { label: t("calc.eq995"), value: grams(it.eq995 ?? it.fine / 0.995) },
+              { label: t("calc.eq999"), value: grams(it.eq999 ?? it.fine / 0.999) },
+            ]
+          : []),
+        { label: rateLabel, value: r.rateText },
+      ];
+    }
+    let total = it.total;
+    if (state.roundOff) {
+      total = Math.round(it.total / 10) * 10;
+      const diff = total - it.total;
+      rows.push({ label: t("calc.roundOff"), value: `${diff < 0 ? "−" : "+"} ₹ ${Math.abs(diff).toFixed(2)}` });
+    }
+    const title = r.key === "items" ? (isSilver ? t("calc.silverEstimate") : t("calc.goldEstimate")) : isSilver ? t("calc.oldSilverTitle") : t("calc.oldGoldTitle");
+    return { title, details, rows, totalLabel: r.key === "items" ? t("gold.receipt.total") : t("calc.amountToPay"), total: formatINR(total) };
   };
 
   const switchMode = (m: Mode) => {
@@ -241,10 +291,6 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
           ) : null}
 
           <div className="grid grid-cols-2 gap-4">
-            <Field id={`${metal}-net`} label={t("calc.netWeight")}>
-              <input id={`${metal}-net`} type="number" inputMode="decimal" placeholder={t("calc.enterWeight")} value={netIn} onChange={(e) => setNetIn(e.target.value)} className={inputCls} />
-              {grossOn ? <span className="text-xs text-gray-600">{netHint}</span> : null}
-            </Field>
             <Field id={`${metal}-rate`} label={rateLabel}>
               <NumberInput
                 id={`${metal}-rate`}
@@ -255,6 +301,11 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
                 iconSet={saved.rate !== null}
                 iconLabel={`${saved.rate !== null ? "Edit" : "Set"} ${metal} ${mode} rate`}
               />
+            </Field>
+            {/* Net on the right, under Less when Gross & Less are on. */}
+            <Field id={`${metal}-net`} label={t("calc.netWeight")}>
+              <input id={`${metal}-net`} type="number" inputMode="decimal" placeholder={t("calc.enterWeight")} value={netIn} onChange={(e) => setNetIn(e.target.value)} className={inputCls} />
+              {grossOn ? <span className="text-xs text-gray-600">{netHint}</span> : null}
             </Field>
           </div>
 
@@ -349,16 +400,7 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
         </section>
       )}
 
-      {result ? (
-        <section aria-label={t("calc.result")} className="flex flex-col gap-3 rounded-xl border border-purple-200 bg-white p-3 shadow-lg">
-          <div className="text-[11px] leading-snug text-black" style={{ fontFamily: "'Roboto Mono', 'Noto Sans Mono', ui-monospace, monospace" }}>
-            <ItemCard it={result.it} no={1} mode={result.key === "items" ? "sell" : "buy"} layout="detailed" />
-          </div>
-          <button type="button" onClick={() => add(result.it, result.key)} className={`${primaryBtnCls} flex items-center justify-center gap-2`}>
-            <Plus className="h-4 w-4" /> {t("calc.addToEstimate")}
-          </button>
-        </section>
-      ) : null}
+      {result ? <BillCard {...billRows(result, metalName)} /> : null}
 
       {pending ? (
         <Modal
@@ -423,6 +465,34 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
     </div>
   );
 };
+
+/** The Calculator's result card (restored from before the Estimate tab). */
+const BillCard: React.FC<{ title: string; details: Row[]; rows: Row[]; totalLabel: string; total: string }> = ({ title, details, rows, totalLabel, total }) => (
+  <section className="flex flex-col gap-2.5 rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 px-5 pb-4 pt-3 text-sm shadow-lg">
+    <h2 className="bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 bg-clip-text text-center text-xl font-bold text-transparent">{title}</h2>
+    {details.length ? (
+      <div className="flex flex-col gap-1 rounded-md bg-white/70 px-3 py-2">
+        {details.map((d) => (
+          <div key={d.label} className="flex justify-between gap-3">
+            <span className="text-gray-600">{d.label}</span>
+            <span className="truncate font-medium text-gray-900">{d.value}</span>
+          </div>
+        ))}
+      </div>
+    ) : null}
+    {rows.map((r) => (
+      <div key={r.label} className="flex justify-between gap-3 px-1">
+        <span className="text-gray-600">{r.label}</span>
+        <span className="whitespace-nowrap text-purple-700">{r.value}</span>
+      </div>
+    ))}
+    <div className="h-0.5 rounded-full bg-gradient-to-r from-purple-200 to-pink-200" />
+    <div className="flex justify-between rounded-md bg-gradient-to-r from-purple-200 via-pink-200 to-rose-200 p-3 font-bold text-purple-900">
+      <span>{totalLabel}</span>
+      <span>₹ {total}</span>
+    </div>
+  </section>
+);
 
 /** Set / update one saved rate. */
 export const RateDialog: React.FC<{

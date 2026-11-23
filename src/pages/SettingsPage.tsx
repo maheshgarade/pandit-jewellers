@@ -1,19 +1,68 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Printer as PrinterIcon, X } from "lucide-react";
+import { Calculator, ChevronDown, ChevronRight, FileText, Gem, IndianRupee, Printer as PrinterIcon, Store, X } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { inputCls, Switch } from "@/components/calc/ui";
 import { DetailFields, EstimateState, FieldSettings, purityLabel, ShopDetails, useStore } from "@/lib/store";
 import { buildEstimate, drawEstimate } from "@/lib/receipt";
 
-const Card: React.FC<{ title: string; hint?: string; children: React.ReactNode }> = ({ title, hint, children }) => (
-  <section className="overflow-hidden rounded-xl border border-purple-200 bg-white">
-    <h2 className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-purple-800">{title}</h2>
-    {hint ? <p className="px-4 pb-2 text-xs text-gray-500">{hint}</p> : null}
-    {children}
+/** One expandable group of settings. Collapsed, it shows a one-line summary of what is set. */
+const Section: React.FC<{
+  id: string;
+  title: string;
+  summary: string;
+  icon: React.ElementType;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}> = ({ id, title, summary, icon: Icon, open, onToggle, children }) => (
+  <section className="overflow-hidden rounded-xl border border-purple-200 bg-white shadow-sm">
+    <h2>
+      <button type="button" aria-expanded={open} aria-controls={`set-${id}`} onClick={onToggle} className="flex min-h-16 w-full items-center gap-3 px-4 py-2 text-left">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-800">
+          <Icon className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-[15px] font-semibold text-gray-900">{title}</span>
+          <span className="truncate text-xs text-gray-600">{summary}</span>
+        </span>
+        <ChevronDown className={`h-5 w-5 shrink-0 text-purple-700 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+      </button>
+    </h2>
+    {open ? (
+      <div id={`set-${id}`} className="border-t border-purple-100">
+        {children}
+      </div>
+    ) : null}
   </section>
 );
+
+const Sub: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <h3 className="border-t border-purple-100 bg-purple-50 px-4 py-2 text-sm font-bold text-purple-900 first:border-t-0">{children}</h3>
+);
+const Hint: React.FC<{ children: React.ReactNode }> = ({ children }) => <p className="px-4 pb-2 pt-3 text-xs leading-relaxed text-gray-600">{children}</p>;
+
+/** Two big choices side by side (paper size, layout, rate unit). */
+function Choice<T extends string | number>({ label, value, options, onPick }: { label: string; value: T; options: { value: T; title: string; hint: string }[]; onPick: (v: T) => void }) {
+  return (
+    <div role="radiogroup" aria-label={label} className="grid grid-cols-2 gap-2 px-4 py-3">
+      {options.map((o) => (
+        <button
+          key={String(o.value)}
+          type="button"
+          role="radio"
+          aria-checked={value === o.value}
+          onClick={() => onPick(o.value)}
+          className={`flex min-h-16 flex-col items-center justify-center rounded-xl border-2 px-2 text-center ${value === o.value ? "border-purple-700 bg-purple-50" : "border-gray-200"}`}
+        >
+          <span className="text-[15px] font-semibold text-gray-900">{o.title}</span>
+          <span className="text-xs text-gray-600">{o.hint}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const SHOP_FIELDS: { key: keyof ShopDetails; label: string; placeholder: string }[] = [
   { key: "name", label: "Shop name", placeholder: "e.g. Pandit Jewellers" },
@@ -23,11 +72,6 @@ const SHOP_FIELDS: { key: keyof ShopDetails; label: string; placeholder: string 
   { key: "other", label: "Other details", placeholder: "e.g. BIS hallmark reg. no., email" },
   { key: "footer", label: "Footer message", placeholder: "e.g. Thank you! Visit again." },
 ];
-
-const LAYOUTS = [
-  { value: "compact", label: "Compact", hint: "Net Wt and Total" },
-  { value: "detailed", label: "Detailed", hint: "Weights, metal, making, GST" },
-] as const;
 
 /** A made-up estimate for the Settings preview. */
 const SAMPLE: EstimateState = {
@@ -40,18 +84,30 @@ const SAMPLE: EstimateState = {
   no: null,
 };
 
+const onOff = (b: boolean) => (b ? "on" : "off");
+
 export default function SettingsPage() {
   const { state, update } = useStore();
+  const [open, setOpen] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [newVal, setNewVal] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
+  const toggle = (id: string) => setOpen((o) => (o === id ? null : id));
 
   const setField = <K extends keyof FieldSettings>(key: K, field: keyof FieldSettings[K]) =>
     update((s) => ({ ...s, fields: { ...s.fields, [key]: { ...s.fields[key], [field]: !s.fields[key][field] } } }));
-
   const setDetail = (k: keyof DetailFields) => update((s) => ({ ...s, details: { ...s.details, [k]: !s.details[k] } }));
+  const setShop = (key: keyof ShopDetails, value: string) => update((s) => ({ ...s, shop: { ...s.shop, [key]: value } }));
 
-  const setShop =(key: keyof ShopDetails, value: string) => update((s) => ({ ...s, shop: { ...s.shop, [key]: value } }));
+  const setRateUnit = (u: 1 | 10) =>
+    update((s) => {
+      if (s.rateUnit === u) return s;
+      const k = u / s.rateUnit; // 10 or 0.1: saved rates keep the same price
+      const rates = Object.fromEntries(
+        Object.entries(s.rates).map(([key, r]) => [key, { ...r, rate: r.rate === null ? null : Math.round(r.rate * k * 100) / 100 }])
+      ) as typeof s.rates;
+      return { ...s, rateUnit: u, rates };
+    });
 
   const addPurity = () => {
     const v = parseFloat(newVal);
@@ -76,77 +132,61 @@ export default function SettingsPage() {
   };
 
   const f = state.fields;
+  const paper = state.paper === 58 ? "2 inch" : "3 inch";
+  const fieldsOn = [
+    f["gold-sell"].grossLess && "Gold Sell gross/less",
+    f["gold-buy"].grossLess && "Gold Buy gross/less",
+    f["gold-buy"].purity && "Purity",
+    f["silver-sell"].gross && "Silver gross",
+    state.details.itemName && "Item name",
+    state.details.productCode && "Product code",
+  ].filter(Boolean);
 
   return (
     <Layout>
-      <div className="container mx-auto flex max-w-md flex-col gap-4 px-4 py-4">
+      <div className="container mx-auto flex max-w-md flex-col gap-3 px-4 py-4">
         <h1 className="text-xl font-bold text-purple-900">Settings</h1>
 
-        <Card title="Rate unit" hint="How gold and silver rates are entered and saved. Saved rates are converted when you switch.">
-          <div role="radiogroup" aria-label="Rate unit" className="grid grid-cols-2 gap-2 px-4 pb-4">
-            {([1, 10] as const).map((u) => (
-              <button
-                key={u}
-                type="button"
-                role="radio"
-                aria-checked={state.rateUnit === u}
-                onClick={() =>
-                  update((s) => {
-                    if (s.rateUnit === u) return s;
-                    const k = u / s.rateUnit; // 10 or 0.1
-                    const rates = Object.fromEntries(
-                      Object.entries(s.rates).map(([key, r]) => [key, { ...r, rate: r.rate === null ? null : Math.round(r.rate * k * 100) / 100 }])
-                    ) as typeof s.rates;
-                    return { ...s, rateUnit: u, rates };
-                  })
-                }
-                className={`flex min-h-16 flex-col items-center justify-center rounded-xl border-2 ${state.rateUnit === u ? "border-purple-700 bg-purple-50" : "border-gray-200"}`}
-              >
-                <span className="text-[15px] font-semibold text-gray-900">{u === 1 ? "Per gram" : "Per 10 gram"}</span>
-                <span className="text-xs text-gray-600">{u === 1 ? "e.g. ₹6,850 / g" : "e.g. ₹68,500 / 10 g"}</span>
-              </button>
-            ))}
-          </div>
-        </Card>
-
-        <Card title="Calculator fields" hint="Turn on the extra fields you need. Each metal and mode has its own.">
-          <h3 className="border-t border-purple-100 bg-purple-50 px-4 py-2 text-sm font-bold text-purple-900">Gold · Sell</h3>
-          <Switch on={f["gold-sell"].grossLess} onToggle={() => setField("gold-sell", "grossLess")} label="Gross & Less Weight" hint="Net = Gross − Less" />
-          <h3 className="border-t border-purple-100 bg-purple-50 px-4 py-2 text-sm font-bold text-purple-900">Gold · Buy</h3>
-          <Switch on={f["gold-buy"].grossLess} onToggle={() => setField("gold-buy", "grossLess")} label="Gross & Less Weight" hint="Net = Gross − Less" />
-          <Switch on={f["gold-buy"].purity} onToggle={() => setField("gold-buy", "purity")} label="Purity" hint="Fine gold = Net × Purity %" />
-          <h3 className="border-t border-purple-100 bg-purple-50 px-4 py-2 text-sm font-bold text-purple-900">Silver · Sell</h3>
-          <Switch on={f["silver-sell"].gross} onToggle={() => setField("silver-sell", "gross")} label="Gross Weight" hint="Net = Gross − Packet" />
-          <Switch on={f["silver-sell"].packet} onToggle={() => setField("silver-sell", "packet")} label="Packet Weight" hint="Used with Gross Weight" />
-        </Card>
-
-        <Card title="Estimate details" hint="Extra item fields on the Calculator tab. The Estimate tab always has item name, product code and customer details.">
-          <Switch on={state.details.itemName} onToggle={() => setDetail("itemName")} label="Item name" />
-          <Switch on={state.details.productCode} onToggle={() => setDetail("productCode")} label="Product code" hint="Letters and numbers" />
-          <Switch
-            on={state.roundOff}
-            onToggle={() => update((s) => ({ ...s, roundOff: !s.roundOff }))}
-            label="Round off"
-            hint="Round the final amount to the nearest ₹10"
+        <Section id="printer" icon={PrinterIcon} title="Printer" summary={`${state.printer?.name ?? "No printer"} · ${paper} paper`} open={open === "printer"} onToggle={() => toggle("printer")}>
+          <Link to="/settings/printer" className="flex min-h-16 items-center gap-3 px-4 py-2">
+            <span className="flex flex-1 flex-col">
+              <span className="text-[15px] text-gray-900">{state.printer?.name ?? "No printer connected"}</span>
+              <span className="text-xs text-gray-600">{state.printer ? "Bluetooth · ready to print" : "Tap to find a Bluetooth printer"}</span>
+            </span>
+            <span className="text-sm font-semibold text-purple-700">{state.printer ? "Change" : "Connect"}</span>
+            <ChevronRight className="h-4 w-4 text-purple-700" aria-hidden="true" />
+          </Link>
+          <Sub>Paper size</Sub>
+          <Choice
+            label="Paper size"
+            value={state.paper}
+            onPick={(p) => update((s) => ({ ...s, paper: p }))}
+            options={[
+              { value: 58, title: "2 inch", hint: "58 mm paper" },
+              { value: 80, title: "3 inch", hint: "80 mm paper" },
+            ]}
           />
-        </Card>
+          <Hint>The printer is released about 20 seconds after each print, so other apps and phones can use it.</Hint>
+        </Section>
 
-        <Card title="Estimate print" hint="How the printed and shared estimate looks.">
-          <div role="radiogroup" aria-label="Item cards" className="grid grid-cols-2 gap-2 px-4 pb-2">
-            {LAYOUTS.map((l) => (
-              <button
-                key={l.value}
-                type="button"
-                role="radio"
-                aria-checked={state.layout === l.value}
-                onClick={() => update((s) => ({ ...s, layout: l.value }))}
-                className={`flex min-h-16 flex-col items-center justify-center rounded-xl border-2 px-2 text-center ${state.layout === l.value ? "border-purple-700 bg-purple-50" : "border-gray-200"}`}
-              >
-                <span className="text-[15px] font-semibold text-gray-900">{l.label}</span>
-                <span className="text-xs text-gray-500">{l.hint}</span>
-              </button>
-            ))}
-          </div>
+        <Section
+          id="print"
+          icon={FileText}
+          title="Estimate print"
+          summary={`${state.layout === "compact" ? "Compact" : "Detailed"} cards · shop details ${onOff(state.printShopDetails)}`}
+          open={open === "print"}
+          onToggle={() => toggle("print")}
+        >
+          <Sub>Item cards</Sub>
+          <Choice
+            label="Item cards"
+            value={state.layout}
+            onPick={(l) => update((s) => ({ ...s, layout: l }))}
+            options={[
+              { value: "compact", title: "Compact", hint: "Net Wt and Total" },
+              { value: "detailed", title: "Detailed", hint: "Weights, metal, making, GST" },
+            ]}
+          />
           <Switch
             on={state.printShopDetails}
             onToggle={() => update((s) => ({ ...s, printShopDetails: !s.printShopDetails }))}
@@ -158,9 +198,10 @@ export default function SettingsPage() {
               Preview estimate
             </button>
           </div>
-        </Card>
+        </Section>
 
-        <Card title="Shop details" hint="The shop name prints at the top of every estimate. The rest prints when Shop details is on under Estimate print.">
+        <Section id="shop" icon={Store} title="Shop details" summary={state.shop.name || "Not set"} open={open === "shop"} onToggle={() => toggle("shop")}>
+          <Hint>The shop name prints on every estimate. The rest prints when Shop details is on under Estimate print.</Hint>
           <div className="flex flex-col gap-3 px-4 pb-4">
             {SHOP_FIELDS.map((sf) => (
               <div key={sf.key} className="flex flex-col gap-1">
@@ -171,42 +212,53 @@ export default function SettingsPage() {
               </div>
             ))}
           </div>
-        </Card>
+        </Section>
 
-        <Card title="Printer">
-          <div role="radiogroup" aria-label="Paper size" className="grid grid-cols-2 gap-2 px-4 pb-2">
-            {([58, 80] as const).map((p) => (
-              <button
-                key={p}
-                type="button"
-                role="radio"
-                aria-checked={state.paper === p}
-                onClick={() => update((s) => ({ ...s, paper: p }))}
-                className={`flex min-h-16 flex-col items-center justify-center rounded-xl border-2 ${state.paper === p ? "border-purple-700 bg-purple-50" : "border-gray-200"}`}
-              >
-                <span className="text-[15px] font-semibold text-gray-900">{p === 58 ? "2 inch" : "3 inch"}</span>
-                <span className="text-xs text-gray-500">{p} mm paper</span>
-              </button>
-            ))}
-          </div>
-          <Link to="/settings/printer" className="flex min-h-16 items-center gap-3 border-t border-purple-100 px-4 py-2">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-800">
-              <PrinterIcon className="h-5 w-5" />
-            </span>
-            <span className="flex flex-1 flex-col">
-              <span className="text-[15px] text-gray-900">{state.printer?.name ?? "No printer connected"}</span>
-              <span className="text-xs text-gray-500">{state.printer ? "Bluetooth · ready to print" : "Tap to find a Bluetooth printer"}</span>
-            </span>
-            <span className="text-sm font-semibold text-purple-700">{state.printer ? "Change" : "Connect"}</span>
-            <ChevronRight className="h-4 w-4 text-purple-700" />
-          </Link>
-          <p className="px-4 pb-3 text-xs leading-relaxed text-gray-500">
-            The printer is released about 20 seconds after each print, so other apps and phones can use the same printer.
-          </p>
-        </Card>
+        <Section
+          id="rates"
+          icon={IndianRupee}
+          title="Rates & totals"
+          summary={`Rate ${state.rateUnit === 1 ? "per gram" : "per 10 gram"} · round off ${onOff(state.roundOff)}`}
+          open={open === "rates"}
+          onToggle={() => toggle("rates")}
+        >
+          <Sub>Rate unit</Sub>
+          <Choice
+            label="Rate unit"
+            value={state.rateUnit}
+            onPick={setRateUnit}
+            options={[
+              { value: 1, title: "Per gram", hint: "e.g. ₹6,850 / g" },
+              { value: 10, title: "Per 10 gram", hint: "e.g. ₹68,500 / 10 g" },
+            ]}
+          />
+          <Switch on={state.roundOff} onToggle={() => update((s) => ({ ...s, roundOff: !s.roundOff }))} label="Round off" hint="Round the final amount to the nearest ₹10" />
+        </Section>
 
-        <Card title="Purity list" hint="Shown in the Gold Buy purity list.">
-          <div className="max-h-56 overflow-y-auto border-t border-purple-100">
+        <Section
+          id="fields"
+          icon={Calculator}
+          title="Calculator fields"
+          summary={fieldsOn.length ? fieldsOn.join(", ") : "Only the basic fields"}
+          open={open === "fields"}
+          onToggle={() => toggle("fields")}
+        >
+          <Hint>Extra fields for each metal and mode. The Estimate tab always has item name, product code and customer details.</Hint>
+          <Sub>Gold · Sell</Sub>
+          <Switch on={f["gold-sell"].grossLess} onToggle={() => setField("gold-sell", "grossLess")} label="Gross & Less Weight" hint="Net = Gross − Less" />
+          <Sub>Gold · Buy</Sub>
+          <Switch on={f["gold-buy"].grossLess} onToggle={() => setField("gold-buy", "grossLess")} label="Gross & Less Weight" hint="Net = Gross − Less" />
+          <Switch on={f["gold-buy"].purity} onToggle={() => setField("gold-buy", "purity")} label="Purity" hint="Fine gold = Net × Purity %" />
+          <Sub>Silver · Sell</Sub>
+          <Switch on={f["silver-sell"].gross} onToggle={() => setField("silver-sell", "gross")} label="Gross Weight" hint="Net = Gross − Packet" />
+          <Switch on={f["silver-sell"].packet} onToggle={() => setField("silver-sell", "packet")} label="Packet Weight" hint="Used with Gross Weight" />
+          <Sub>Calculator tab</Sub>
+          <Switch on={state.details.itemName} onToggle={() => setDetail("itemName")} label="Item name" />
+          <Switch on={state.details.productCode} onToggle={() => setDetail("productCode")} label="Product code" hint="Letters and numbers" />
+        </Section>
+
+        <Section id="purity" icon={Gem} title="Purity list" summary={`${state.purities.length} purities for Gold Buy`} open={open === "purity"} onToggle={() => toggle("purity")}>
+          <div className="max-h-56 overflow-y-auto">
             {state.purities.map((p, i) => (
               <div key={`${p.value}-${i}`} className="flex min-h-11 items-center justify-between border-b border-purple-100 pl-4 pr-2">
                 <span className="text-[15px] text-gray-900">{purityLabel(p)}</span>
@@ -215,7 +267,7 @@ export default function SettingsPage() {
                     type="button"
                     aria-label={`Remove ${purityLabel(p)}`}
                     onClick={() => update((s) => ({ ...s, purities: s.purities.filter((_, j) => j !== i) }))}
-                    className="flex h-10 w-10 items-center justify-center text-red-600"
+                    className="flex h-11 w-11 items-center justify-center text-red-600"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -230,7 +282,7 @@ export default function SettingsPage() {
               Add
             </button>
           </div>
-        </Card>
+        </Section>
       </div>
 
       {preview ? (
