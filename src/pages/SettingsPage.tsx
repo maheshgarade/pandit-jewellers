@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Calculator, ChevronDown, ChevronRight, FileText, Gem, IndianRupee, Package, Printer as PrinterIcon, Store, UserRound, X } from "lucide-react";
+import { Calculator, ChevronDown, Lock, ChevronRight, FileText, Gem, IndianRupee, Package, Printer as PrinterIcon, Store, UserRound, X } from "lucide-react";
 import { ProductMaster } from "@/components/ProductMaster";
+import { ShopLockSettings } from "@/components/ShopLockSettings";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { inputCls, Switch } from "@/components/calc/ui";
@@ -142,6 +143,10 @@ export default function SettingsPage() {
     <Layout>
       <div className="container mx-auto flex max-w-md flex-col gap-3 px-4 py-4">
         <h1 className="text-xl font-bold text-purple-900">{t("settings.title")}</h1>
+
+        <Section id="lock" icon={Lock} title={t("lock.section")} summary={t("lock.sectionSum")} open={open === "lock"} onToggle={() => toggle("lock")}>
+          <ShopLockSettings />
+        </Section>
 
         <Section id="profile" icon={UserRound} title={t("settings.profile")} summary={state.salesman ? `${t("print.salesman")}: ${state.salesman}` : t("settings.addName")} open={open === "profile"} onToggle={() => toggle("profile")}>
           <Hint>{t("settings.profileHint")}</Hint>

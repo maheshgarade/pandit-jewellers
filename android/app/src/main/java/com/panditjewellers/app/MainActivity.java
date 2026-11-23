@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(PrinterPlugin.class);
+        registerPlugin(ShopLockPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Android 15+ forces edge-to-edge, so the WebView draws under the status bar,

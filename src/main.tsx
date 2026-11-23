@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import App from "./App";
+import { ShopLockGate } from "./components/ShopLockGate";
 
 import ContextsProvider from "./context/ContextsProvider.tsx";
 import { LanguageProvider } from "./context/LanguageContext.tsx";
@@ -27,7 +28,9 @@ createRoot(document.getElementById("root")!).render(
             <ContextsProvider>
               <StoreProvider>
                 <BrowserRouter>
-                  <App />
+                  <ShopLockGate>
+                    <App />
+                  </ShopLockGate>
                 </BrowserRouter>
               </StoreProvider>
             </ContextsProvider>
