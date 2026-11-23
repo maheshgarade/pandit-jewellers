@@ -6,7 +6,7 @@ import { recordEstimate } from "@/lib/customers";
 import { useLanguage } from "@/context/LanguageContext";
 
 /**
- * Floating + (bottom left, above the tabs): Create estimate, Create customer, Calculate, to jump between
+ * Floating + (bottom right, above the tabs): Create estimate, Create customer, Calculate, to jump between
  * screens. "Create estimate" starts a new one only when the current one was already printed / shared.
  */
 export const QuickActions: React.FC = () => {
@@ -42,7 +42,7 @@ export const QuickActions: React.FC = () => {
   return (
     <>
       {open ? <div className="fixed inset-0 z-40 bg-gray-900/30" aria-hidden="true" onClick={() => setOpen(false)} /> : null}
-      <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-4 z-40 flex flex-col-reverse items-start gap-2">
+      <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 flex flex-col-reverse items-end gap-2">
         <button
           type="button"
           aria-label={t("fab.open")}
