@@ -3,7 +3,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { EMPTY_ESTIMATE, EstimateState, MakingType, useStore } from "@/lib/store";
 import { buildEstimate, drawEstimate, EstimateItem, money, rupees } from "@/lib/receipt";
 import { recordEstimate } from "@/lib/customers";
-import { computeItem, ItemInput } from "@/lib/items";
+import { adjustToTotal, clearAdjust, computeItem, isAdjusted, ItemInput } from "@/lib/items";
 import { useLanguage } from "@/context/LanguageContext";
 import { ResultActions } from "./ResultActions";
 import { Field, inputCls, Modal, primaryBtnCls, resetBtnCls } from "./ui";
@@ -21,6 +21,7 @@ export const EstimatePanel: React.FC = () => {
   const [confirmNew, setConfirmNew] = useState(false);
   const [editing, setEditing] = useState<Ref | null>(null);
   const [deleting, setDeleting] = useState<Ref | null>(null);
+  const [adjusting, setAdjusting] = useState(false);
   const e = state.estimate;
   if (!e.items.length && !e.old.length) return null;
 
@@ -30,6 +31,10 @@ export const EstimatePanel: React.FC = () => {
   const edit = (fn: (x: EstimateState) => EstimateState) => update((s) => ({ ...s, estimate: fn(s.estimate) }));
   const itemAt = (r: Ref) => e[r.key][r.index];
   const sellMode = e.items.length > 0;
+  // Final amount adjustment: only sold items with their entries kept can take it (into making).
+  const canAdjust = sellMode && e.items.some((it) => it.input?.mode === "sell");
+  const adjusted = isAdjusted(e.items);
+  const exactNet = est.itemsTotal - est.less.reduce((a, l) => a + l.amount, 0);
 
   const card = (it: EstimateItem, key: ListKey, index: number) => {
     const old = key === "old";
@@ -97,10 +102,27 @@ export const EstimatePanel: React.FC = () => {
             </span>
           </div>
         ) : null}
-        <div className="mt-1 flex justify-between rounded-md bg-gradient-to-r from-purple-200 via-pink-200 to-rose-200 p-3 font-bold text-purple-900">
+        <div className="mt-1 flex items-center justify-between gap-2 rounded-md bg-gradient-to-r from-purple-200 via-pink-200 to-rose-200 py-1 pl-3 pr-1 font-bold text-purple-900">
           <span>{est.payLabel === "NET PAYABLE" ? t("estimate.netPayable") : t("calc.amountToPay")}</span>
-          <span>{rupees(est.grand)}</span>
+          <span className="flex items-center">
+            {rupees(est.grand)}
+            {canAdjust ? (
+              <button type="button" aria-label={t("estimate.adjustTotal")} onClick={() => setAdjusting(true)} className="flex h-11 w-11 items-center justify-center text-purple-800">
+                <Pencil className="h-[18px] w-[18px]" />
+              </button>
+            ) : (
+              <span className="w-2" />
+            )}
+          </span>
         </div>
+        {adjusted ? (
+          <div className="flex items-center justify-between gap-2 text-xs text-gray-700">
+            <span>{t("estimate.adjustedNote")}</span>
+            <button type="button" onClick={() => edit((x) => ({ ...x, items: clearAdjust(x.items) }))} className="min-h-11 px-1 font-semibold text-purple-800 underline">
+              {t("estimate.removeAdjust")}
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <ResultActions
@@ -121,6 +143,18 @@ export const EstimatePanel: React.FC = () => {
           onSave={(it) => {
             edit((x) => ({ ...x, [editing.key]: x[editing.key].map((o, k) => (k === editing.index ? it : o)) }));
             setEditing(null);
+          }}
+        />
+      ) : null}
+
+      {adjusting ? (
+        <AdjustDialog
+          current={est.grand}
+          net={exactNet}
+          onClose={() => setAdjusting(false)}
+          onSave={(target) => {
+            edit((x) => ({ ...x, items: adjustToTotal(x.items, exactNet, target) }));
+            setAdjusting(false);
           }}
         />
       ) : null}
@@ -300,5 +334,42 @@ const ItemEditor: React.FC<{ item: EstimateItem; onClose: () => void; onSave: (i
         </div>
       </section>
     </div>
+  );
+};
+
+/** Type the final amount; the difference goes into the sold items' making charges (with GST). */
+const AdjustDialog: React.FC<{ current: number; net: number; onClose: () => void; onSave: (target: number) => void }> = ({ current, net, onClose, onSave }) => {
+  const { t } = useLanguage();
+  const [v, setV] = useState(String(current));
+  const target = parseFloat(v);
+  const ok = !isNaN(target) && target > 0;
+  const diff = ok ? target - net : 0;
+  return (
+    <Modal
+      title={t("estimate.adjustTotal")}
+      onClose={onClose}
+      footer={
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" onClick={onClose} className="h-12 rounded-lg border border-gray-300 text-[15px] text-gray-700">
+            Cancel
+          </button>
+          <button type="button" disabled={!ok} onClick={() => onSave(Math.round(target))} className={`${primaryBtnCls} disabled:opacity-50`}>
+            {t("customers.save")}
+          </button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="adj-total" className="text-sm font-medium text-purple-800">
+          {t("estimate.finalAmount")}
+        </label>
+        <input id="adj-total" type="number" inputMode="numeric" autoFocus value={v} onChange={(e) => setV(e.target.value)} className={`${inputCls} h-12 text-lg font-semibold`} />
+        <span className="text-xs leading-relaxed text-gray-600">
+          {ok && Math.abs(diff) >= 0.01
+            ? `${diff > 0 ? "+" : "−"} ₹${money(Math.abs(diff))} ${t("estimate.adjustHint")} (${diff > 0 ? "+" : "−"} ₹${money(Math.abs(diff) / 1.03)} + GST)`
+            : t("estimate.adjustHintEmpty")}
+        </span>
+      </div>
+    </Modal>
   );
 };
