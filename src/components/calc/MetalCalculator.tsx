@@ -415,7 +415,8 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
   );
 };
 
-const RateDialog: React.FC<{
+/** Set / update one saved rate. Also used by the Today's rates strip. */
+export const RateDialog: React.FC<{
   title: string;
   label: string;
   initial: number | null;
