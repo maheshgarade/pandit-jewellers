@@ -111,9 +111,12 @@ export async function matchTotp(secret: string, code: string, afterStep = -1): P
   return null;
 }
 
-export const otpauthUrl = (secret: string, shop: string) => {
-  const label = encodeURIComponent(`${shop || "Pandit Jewellers"}:Shop lock`);
-  return `otpauth://totp/${label}?secret=${secret}&issuer=${encodeURIComponent(shop || "Pandit Jewellers")}&digits=6&period=30`;
+/** The authenticator entry is named "<shop>: <salesman>", so the owner can tell the staff phones apart. */
+export const otpauthUrl = (secret: string, shop: string, salesman: string) => {
+  const issuer = (shop || "Pandit Jewellers").replace(/:/g, " ").trim();
+  const name = (salesman || "Shop lock").replace(/:/g, " ").trim();
+  const e = encodeURIComponent;
+  return `otpauth://totp/${e(issuer)}:${e(name)}?secret=${secret}&issuer=${e(issuer)}&digits=6&period=30`;
 };
 
 /* ---------- Backup codes ---------- */

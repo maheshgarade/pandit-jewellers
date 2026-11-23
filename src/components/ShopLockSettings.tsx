@@ -52,10 +52,10 @@ const Setup: React.FC<{ onSaved: (cfg: LockConfig, codes: string[]) => void }> =
   const secret = useMemo(newSecret, []);
   const qr = useMemo(() => {
     const q = qrcode(0, "M");
-    q.addData(otpauthUrl(secret, state.shop.name));
+    q.addData(otpauthUrl(secret, state.shop.name, state.salesman));
     q.make();
     return q.createDataURL(5, 8);
-  }, [secret, state.shop.name]);
+  }, [secret, state.shop.name, state.salesman]);
   const [code, setCode] = useState("");
 
   const confirm = async () => {
@@ -67,6 +67,11 @@ const Setup: React.FC<{ onSaved: (cfg: LockConfig, codes: string[]) => void }> =
 
   return (
     <div className="flex flex-col gap-3 px-4 pb-4 pt-3">
+      {state.salesman.trim() ? (
+        <p className="rounded-lg bg-purple-50 px-3 py-2 text-sm text-purple-900">{t("lock.entryName", { n: `${state.shop.name || "Pandit Jewellers"}: ${state.salesman.trim()}` })}</p>
+      ) : (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{t("lock.addNameFirst")}</p>
+      )}
       <p className="text-sm text-gray-700">{t("lock.setupStep1")}</p>
       <img src={qr} alt={t("lock.qrAlt")} className="mx-auto h-52 w-52" />
       <p className="text-center text-xs text-gray-600">

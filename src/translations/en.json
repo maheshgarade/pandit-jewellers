@@ -402,6 +402,8 @@
     "appCode": "6-digit code from the owner's authenticator app",
     "backupCode": "Backup code",
     "useBackup": "Owner's phone not available? Use a backup code",
-    "useApp": "Use the authenticator app code"
+    "useApp": "Use the authenticator app code",
+    "entryName": "In the owner's authenticator app this phone will show as “{n}”.",
+    "addNameFirst": "Tip: first enter the salesman's name in Settings → Profile, so the owner's authenticator app shows whose phone this is."
   }
 }
