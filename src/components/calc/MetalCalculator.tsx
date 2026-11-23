@@ -5,16 +5,15 @@ import { toast } from "sonner";
 import { EMPTY_ESTIMATE, EstimateState, formatINR, MakingType, makingText, Metal, Mode, rateKey, timeText, useStore } from "@/lib/store";
 import { money, type EstimateItem } from "@/lib/receipt";
 import { recordEstimate } from "@/lib/customers";
+import { computeItem } from "@/lib/items";
 import { useLanguage } from "@/context/LanguageContext";
 import { Field, inputCls, linkBtnCls, Modal, NumberInput, primaryBtnCls, resetBtnCls } from "./ui";
 import { PurityCombo } from "./PurityCombo";
 
-const GST_RATE = 3;
 const num = (v: string) => {
   const n = parseFloat(v);
   return isNaN(n) || n < 0 ? 0 : n;
 };
-const r2 = (n: number) => Math.round(n * 100) / 100;
 type ListKey = "items" | "old";
 /** The Calculator tab's single result. */
 type CalcResult = { it: EstimateItem; key: ListKey; name: string; making: string; rateText: string };
@@ -133,37 +132,18 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
   /** The item in the form, or null when weight or rate is missing. */
   const currentItem = (): EstimateItem | null => {
     if (!hasWeight || rateVal === "") return null;
-    const rate = num(rateVal) / state.rateUnit; // per gram, whatever unit the rate is entered in
-    const base: EstimateItem = {
+    const pur = num(purity);
+    return computeItem({
       metal,
+      mode,
       name: (showName && itemName.trim()) || (mode === "sell" ? `${metalName} ${t("calc.defaultItem")}` : `${t("calc.oldItem")} ${metalName}`),
       code: (showCode && productCode.trim()) || undefined,
-      net,
-      total: 0,
       ...(grossOn ? { gross: num(gross), less: leftOn ? num(less) : 0, lessLabel: isSilver ? "Packet Wt" : "Less Wt" } : {}),
-    };
-    if (mode === "sell") {
-      const price = r2(net * rate);
-      const mv = num(makingVal);
-      const making = r2(mType === "percentage" ? (price * mv) / 100 : mType === "pergram" ? net * mv : mv);
-      const oth = isSilver ? 0 : r2(num(other));
-      const gst = r2(((price + making + oth) * GST_RATE) / 100);
-      return { ...base, price, making, ...(oth ? { other: oth } : {}), gst, total: r2(price + making + oth + gst) };
-    }
-    if (isSilver) return { ...base, rate, total: r2(net * rate) }; // Silver Buy: Net × rate
-    // Gold Buy: fine gold at the 24K rate.
-    const pur = purityOn ? num(purity) : 100;
-    const fine = (net * pur) / 100;
-    const match = state.purities.find((p) => p.value === pur);
-    return {
-      ...base,
-      ...(purityOn ? { purity: `${match?.label ? match.label + "/" : ""}${pur}%` } : {}),
-      fine,
-      eq995: fine / 0.995,
-      eq999: fine / 0.999,
-      rate,
-      total: r2(fine * rate),
-    };
+      net,
+      rate: num(rateVal) / state.rateUnit, // per gram, whatever unit the rate is entered in
+      ...(mode === "sell" ? { mkType: mType, mkValue: num(makingVal), other: isSilver ? 0 : num(other) } : {}),
+      ...(purityOn ? { purity: pur, purityLabel: state.purities.find((p) => p.value === pur)?.label } : {}),
+    });
   };
 
   const addToEstimate = (it: EstimateItem, key: ListKey, fresh: boolean) => {

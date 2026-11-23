@@ -1,4 +1,5 @@
 import type { EstimateState, Metal, PaperWidth, ShopDetails } from "./store";
+import type { ItemInput } from "./items";
 
 /** One item card on the estimate. Sold items carry the price breakdown; old gold / silver the fine-metal value. */
 export interface EstimateItem {
@@ -22,6 +23,8 @@ export interface EstimateItem {
   rate?: number;
   /** Sold: price + making + other + GST. Old metal: the amount paid for it. */
   total: number;
+  /** What was entered, so the item can be edited (see computeItem). */
+  input?: ItemInput;
 }
 
 /** The estimate as printed, from buildEstimate(). */

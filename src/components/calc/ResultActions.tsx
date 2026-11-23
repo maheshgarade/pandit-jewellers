@@ -7,9 +7,10 @@ import { bytesToBase64, canvasToBase64Png, canvasToEscPos } from "@/lib/receipt"
 import { isNative, Printer, printerError } from "@/lib/printer";
 import { WhatsAppIcon } from "./ui";
 
-type Action = "share" | "whatsapp" | "download";
+type Action = "print" | "share" | "whatsapp" | "download";
 
 const ACTION_TEXT: Record<Action, { title: string; go: string }> = {
+  print: { title: "Print estimate", go: "Print" },
   share: { title: "Share estimate", go: "Share" },
   whatsapp: { title: "Send estimate on WhatsApp", go: "Send on WhatsApp" },
   download: { title: "Download estimate", go: "Save image" },
@@ -39,7 +40,8 @@ export const ResultActions: React.FC<{
     onNumbered?.(no);
   };
 
-  const print = async () => {
+  /** Print from the preview: the image shown is the one printed. */
+  const print = async (canvas: HTMLCanvasElement) => {
     if (!state.printer) {
       setNoPrinter(true);
       return;
@@ -51,10 +53,10 @@ export const ResultActions: React.FC<{
     setBusy(true);
     try {
       await Printer.ensureReady();
-      const canvas = await render(no);
       await Printer.write({ address: state.printer.address, data: bytesToBase64(canvasToEscPos(canvas)) });
       toast.success(`Printed on ${state.printer.name}`);
       numbered();
+      setPreview(null);
     } catch (e) {
       toast.error(printerError(e));
     } finally {
@@ -69,6 +71,7 @@ export const ResultActions: React.FC<{
 
   const go = async () => {
     if (!preview) return;
+    if (preview.action === "print") return print(preview.canvas);
     const data = canvasToBase64Png(preview.canvas);
     const text = shareText;
     try {
@@ -104,7 +107,7 @@ export const ResultActions: React.FC<{
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-4 gap-2">
-        <button type="button" aria-label="Print" title="Print" disabled={busy} onClick={print} className={`${iconBtn} bg-purple-800 text-white`}>
+        <button type="button" aria-label="Print" title="Print" disabled={busy} onClick={() => open("print")} className={`${iconBtn} bg-purple-800 text-white`}>
           <PrinterIcon className="h-6 w-6" />
         </button>
         <button type="button" aria-label="Share" title="Share" onClick={() => open("share")} className={`${iconBtn} border border-purple-300 bg-white text-purple-800`}>
@@ -125,7 +128,7 @@ export const ResultActions: React.FC<{
       </p>
 
       {noPrinter ? (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-gray-900/45" onClick={() => setNoPrinter(false)}>
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-gray-900/45" onClick={() => setNoPrinter(false)}>
           <section role="dialog" aria-modal="true" aria-label="No printer connected" className="flex flex-col gap-3 rounded-t-2xl bg-white p-5 pb-8" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-purple-900">No printer connected</h2>
             <p className="text-sm leading-relaxed text-gray-600">Connect a 2 inch or 3 inch Bluetooth thermal printer once. After that, Print sends the estimate straight to it.</p>
@@ -157,7 +160,8 @@ export const ResultActions: React.FC<{
             <button
               type="button"
               onClick={go}
-              className={`h-12 rounded-lg text-[15px] font-semibold text-white ${preview.action === "whatsapp" ? "bg-[#0f7a5c]" : "bg-purple-800"}`}
+              disabled={busy}
+              className={`h-12 rounded-lg disabled:opacity-60 text-[15px] font-semibold text-white ${preview.action === "whatsapp" ? "bg-[#0f7a5c]" : "bg-purple-800"}`}
             >
               {ACTION_TEXT[preview.action].go}
             </button>
