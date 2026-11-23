@@ -104,17 +104,24 @@ export const ResultActions: React.FC<{
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-4 gap-2">
-        <button type="button" aria-label={t("print.print")} title={t("print.print")} disabled={busy} onClick={() => open("print")} className={`${iconBtn} bg-purple-800 text-white`}>
-          <PrinterIcon className="h-6 w-6" />
-        </button>
-        <button type="button" aria-label={t("print.share")} title={t("print.share")} onClick={() => open("share")} className={`${iconBtn} border border-purple-300 bg-white text-purple-800`}>
+        {/* Order: Share · WhatsApp · Download · Print (far right). All white; only the icons carry colour. */}
+        <button type="button" aria-label={t("print.share")} title={t("print.share")} onClick={() => open("share")} className={`${iconBtn} border border-purple-300 bg-white text-purple-800 active:bg-purple-50`}>
           <Share2 className="h-6 w-6" />
         </button>
-        <button type="button" aria-label={t("print.whatsappGo")} title="WhatsApp" onClick={() => open("whatsapp")} className={`${iconBtn} bg-[#25D366] text-white hover:bg-[#1EBE57] active:bg-[#1EBE57]`}>
+        <button
+          type="button"
+          aria-label={t("print.whatsappGo")}
+          title="WhatsApp"
+          onClick={() => open("whatsapp")}
+          className={`${iconBtn} border border-[#25D366] bg-white text-[#25D366] hover:bg-[#E8FAEF] active:bg-[#D3F5E0]`}
+        >
           <WhatsAppIcon className="h-7 w-7" />
         </button>
-        <button type="button" aria-label={t("print.download")} title={t("print.download")} onClick={() => open("download")} className={`${iconBtn} border border-purple-300 bg-white text-purple-800`}>
+        <button type="button" aria-label={t("print.download")} title={t("print.download")} onClick={() => open("download")} className={`${iconBtn} border border-purple-300 bg-white text-purple-800 active:bg-purple-50`}>
           <Download className="h-6 w-6" />
+        </button>
+        <button type="button" aria-label={t("print.print")} title={t("print.print")} disabled={busy} onClick={() => open("print")} className={`${iconBtn} border border-purple-300 bg-white text-purple-800 active:bg-purple-50`}>
+          <PrinterIcon className="h-6 w-6" />
         </button>
       </div>
       <p className="flex items-center justify-center gap-1.5 text-[13px] text-gray-600">

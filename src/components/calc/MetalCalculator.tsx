@@ -7,6 +7,7 @@ import { money, wt, type EstimateItem } from "@/lib/receipt";
 import { recordEstimate } from "@/lib/customers";
 import { computeItem } from "@/lib/items";
 import { ProductPicker } from "./ProductPicker";
+import { suggestProducts } from "@/lib/products";
 import { useLanguage } from "@/context/LanguageContext";
 import { Field, inputCls, linkBtnCls, Modal, NumberInput, primaryBtnCls, resetBtnCls } from "./ui";
 import { PurityCombo } from "./PurityCombo";
@@ -53,6 +54,15 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
   const [pending, setPending] = useState<{ it: EstimateItem; key: ListKey } | null>(null);
   const [dialog, setDialog] = useState<null | "rate" | "making">(null);
   const [pickingProduct, setPickingProduct] = useState(false);
+  const [itemFocus, setItemFocus] = useState(false);
+  // Products like what is typed in Item Name (forgiving: close spellings too). Hidden once it matches one exactly.
+  const exact = state.products.some((c) => c.products.some((p) => p.name === itemName.trim()));
+  const suggestions = itemFocus && !exact ? suggestProducts(state.products, itemName, state.productUse) : [];
+  const pickProduct = (name: string) => {
+    setItemName(name);
+    setItemFocus(false);
+    update((s) => ({ ...s, productUse: { ...s.productUse, [name]: (s.productUse[name] ?? 0) + 1 } }));
+  };
 
   const saved = state.rates[rateKey(metal, mode)];
   const savedMaking = state.making[metal];
@@ -350,7 +360,46 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
                 <Field id={`${metal}-item`} label={t("calc.itemName")}>
                   {/* Type a name, or tap search to pick from the Product master. */}
                   <div className="relative">
-                    <input id={`${metal}-item`} value={itemName} onChange={(e) => setItemName(e.target.value)} className={`${inputCls} pr-11`} />
+                    <input
+                      id={`${metal}-item`}
+                      role="combobox"
+                      aria-expanded={suggestions.length > 0}
+                      aria-controls={`${metal}-item-list`}
+                      aria-autocomplete="list"
+                      autoComplete="off"
+                      value={itemName}
+                      onFocus={() => setItemFocus(true)}
+                      onBlur={() => setItemFocus(false)}
+                      onChange={(e) => setItemName(e.target.value)}
+                      className={`${inputCls} pr-11`}
+                    />
+                    {suggestions.length ? (
+                      // Spans both columns (field + gap + field) so names are readable.
+                      <ul
+                        id={`${metal}-item-list`}
+                        role="listbox"
+                        aria-label={t("products.suggestions")}
+                        className="absolute left-0 top-full z-30 mt-1 w-[calc(200%+1rem)] overflow-hidden rounded-xl border border-purple-200 bg-white shadow-xl"
+                      >
+                        {suggestions.map(({ cat, p }) => (
+                          <li key={p.id} role="option" aria-selected="false">
+                            <button
+                              type="button"
+                              // onMouseDown so the pick lands before the field loses focus.
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                pickProduct(p.name);
+                              }}
+                              onClick={() => pickProduct(p.name)}
+                              className="flex min-h-12 w-full flex-col justify-center border-b border-purple-100 px-4 py-1.5 text-left last:border-b-0 active:bg-purple-50"
+                            >
+                              <span className="text-[15px] font-semibold text-gray-900">{p.name}</span>
+                              <span className="text-xs text-gray-600">{cat.name}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                     <button
                       type="button"
                       aria-label={t("products.choose")}

@@ -89,3 +89,73 @@ export function searchProducts(cats: ProductCategory[], q: string): { cat: Produ
   for (const cat of cats) for (const p of cat.products) if (p.name.toLowerCase().includes(t) || cat.name.toLowerCase().includes(t)) out.push({ cat, p });
   return out;
 }
+
+const norm = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
+
+/** Edit distance, stopping early once it passes `max`. */
+function distance(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    let best = i;
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      best = Math.min(best, cur[j]);
+    }
+    if (best > max) return max + 1;
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+/** How well `q` matches a product name (0 = not at all). Forgiving: word starts, letters in order, small typos. */
+function score(name: string, q: string): number {
+  const n = norm(name);
+  const words = n.split(" ");
+  const qn = norm(q);
+  if (!qn) return 0;
+  if (n === qn) return 120;
+  if (n.startsWith(qn)) return 100;
+  if (words.some((w) => w.startsWith(qn))) return 85;
+  if (n.includes(qn)) return 70;
+  const compact = n.replace(/ /g, "");
+  const qc = qn.replace(/ /g, "");
+  // Letters in order (e.g. "kmrchn" → KAMARCHAIN): fewer gaps score higher.
+  let pos = -1;
+  let gaps = 0;
+  let inOrder = qc.length >= 3;
+  for (const ch of qc) {
+    const at = compact.indexOf(ch, pos + 1);
+    if (at < 0) {
+      inOrder = false;
+      break;
+    }
+    gaps += at - pos - 1;
+    pos = at;
+  }
+  if (inOrder) return Math.max(30, 60 - gaps * 2);
+  // Small typos against a word, or the whole name: 1 letter off for short text, 2 for longer.
+  if (qc.length >= 3) {
+    const max = qc.length <= 5 ? 1 : 2;
+    const close = [...words, compact].some((w) => distance(qc, w.slice(0, Math.max(qc.length, Math.min(w.length, qc.length + 1))), max) <= max);
+    if (close) return 40;
+  }
+  return 0;
+}
+
+/** Products similar to what was typed, best first (ties: most used, then shorter names). */
+export function suggestProducts(cats: ProductCategory[], q: string, use: Record<string, number> = {}, limit = 6): { cat: ProductCategory; p: Product }[] {
+  if (norm(q).length < 2) return [];
+  const seen = new Set<string>();
+  return cats
+    .flatMap((cat) => {
+      // A category that matches well (e.g. "taak" → TAAK) brings its products, just below direct name matches.
+      const catHit = score(cat.name, q) >= 85 ? 65 : 0;
+      return cat.products.map((p) => ({ cat, p, s: Math.max(score(p.name, q), catHit) }));
+    })
+    .filter((x) => x.s > 0 && !seen.has(x.p.name) && (seen.add(x.p.name), true))
+    .sort((a, b) => b.s - a.s || (use[b.p.name] ?? 0) - (use[a.p.name] ?? 0) || a.p.name.length - b.p.name.length)
+    .slice(0, limit)
+    .map(({ cat, p }) => ({ cat, p }));
+}
