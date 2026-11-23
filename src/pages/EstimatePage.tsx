@@ -5,7 +5,7 @@ import CalculatorsSection from "@/components/CalculatorsSection";
 import { EstimatePanel } from "@/components/calc/EstimatePanel";
 import { Field, inputCls } from "@/components/calc/ui";
 import { Customer, EMPTY_ESTIMATE, SavedCustomer, useStore } from "@/lib/store";
-import { estimateFor, recordEstimate, saveEstimateCustomer, searchCustomers } from "@/lib/customers";
+import { estimateFor, mobileDigits, recordEstimate, saveEstimateCustomer, searchCustomers } from "@/lib/customers";
 import { useLanguage } from "@/context/LanguageContext";
 
 /** Estimate tab: the customer, items added one by one, and the estimate as it prints. */
@@ -153,13 +153,14 @@ const CustomerBox: React.FC = () => {
           role="combobox"
           aria-expanded={focus === "number" && matches.length > 0}
           type="tel"
-          inputMode="tel"
+          inputMode="numeric"
+          pattern="[0-9]{10}"
           autoComplete="off"
           placeholder={t("estimate.searchOrType")}
           value={c.number}
           onFocus={() => setFocus("number")}
           onBlur={() => setFocus(null)}
-          onChange={(e) => setField("number", e.target.value.replace(/[^0-9+ ]/g, ""))}
+          onChange={(e) => setField("number", mobileDigits(e.target.value))}
           className={inputCls}
         />
       </Field>

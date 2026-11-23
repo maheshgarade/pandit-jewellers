@@ -7,7 +7,7 @@ import { Field, inputCls, Modal, primaryBtnCls } from "@/components/calc/ui";
 import { ResultActions } from "@/components/calc/ResultActions";
 import { EstimateView } from "@/components/calc/EstimateView";
 import { Customer, SavedCustomer, SavedEstimate, useStore } from "@/lib/store";
-import { estimateFor, recordEstimate, searchCustomers, upsertCustomer } from "@/lib/customers";
+import { estimateFor, mobileDigits, recordEstimate, searchCustomers, upsertCustomer } from "@/lib/customers";
 import { buildEstimate, drawEstimate, rupees } from "@/lib/receipt";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -215,10 +215,11 @@ const CustomerForm: React.FC<{ initial: Customer; title: string; onClose: () => 
           <input
             id="cf-num"
             type="tel"
-            inputMode="tel"
+            inputMode="numeric"
+            pattern="[0-9]{10}"
             autoComplete="tel"
             value={c.number}
-            onChange={(e) => setC({ ...c, number: e.target.value.replace(/[^0-9+ ]/g, "") })}
+            onChange={(e) => setC({ ...c, number: mobileDigits(e.target.value) })}
             className={inputCls}
           />
         </Field>

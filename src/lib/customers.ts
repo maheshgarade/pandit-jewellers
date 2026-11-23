@@ -5,6 +5,14 @@ const pick = (c: Customer): Customer => ({ name: c.name, number: c.number, addre
 const clean = (c: Customer): Customer => ({ name: c.name.trim(), number: c.number.trim(), address: c.address.trim() });
 const digits = (s: string) => s.replace(/\D/g, "");
 
+/** A mobile number field's value: digits only, at most 10. A pasted +91 / 0 prefix is dropped. */
+export function mobileDigits(s: string): string {
+  let d = digits(s);
+  if (d.length === 12 && d.startsWith("91")) d = d.slice(2);
+  else if (d.length === 11 && d.startsWith("0")) d = d.slice(1);
+  return d.slice(0, 10);
+}
+
 /** The estimate with this saved customer on it. One already printed or shared is kept as it was: a new one starts. */
 export const estimateFor = (est: EstimateState, c: SavedCustomer): EstimateState =>
   est.no !== null ? { ...EMPTY_ESTIMATE, customer: pick(c), customerId: c.id } : { ...est, customer: pick(c), customerId: c.id };

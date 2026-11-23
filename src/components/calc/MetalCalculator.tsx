@@ -7,7 +7,6 @@ import { money, type EstimateItem } from "@/lib/receipt";
 import { recordEstimate } from "@/lib/customers";
 import { computeItem } from "@/lib/items";
 import { ProductPicker } from "./ProductPicker";
-import { ProductQuickPick } from "./ProductQuickPick";
 import { useLanguage } from "@/context/LanguageContext";
 import { Field, inputCls, linkBtnCls, Modal, NumberInput, primaryBtnCls, resetBtnCls } from "./ui";
 import { PurityCombo } from "./PurityCombo";
@@ -347,7 +346,6 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
 
           {showName || showCode ? (
             <div className="grid grid-cols-2 gap-4 border-t border-purple-100 pt-4">
-              {onEstimate && mode === "sell" ? <ProductQuickPick value={itemName} onPick={setItemName} /> : null}
               {showName ? (
                 <Field id={`${metal}-item`} label={t("calc.itemName")}>
                   {/* Type a name, or tap search to pick from the Product master. */}

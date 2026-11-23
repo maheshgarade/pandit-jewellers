@@ -103,6 +103,8 @@ export interface AppState {
   products: ProductCategory[];
   /** Profile: the user's name, printed at the bottom of estimates as "Salesman: <name>". */
   salesman: string;
+  /** How often each product name was picked: the most used show first in product search. */
+  productUse: Record<string, number>;
 }
 
 export const EMPTY_ESTIMATE: EstimateState = { items: [], old: [], customer: { name: "", number: "", address: "" }, no: null };
@@ -149,6 +151,7 @@ const DEFAULT_STATE: AppState = {
   history: [],
   products: DEFAULT_PRODUCTS,
   salesman: "",
+  productUse: {},
 };
 
 const STORAGE_KEY = "pj-store-v1";
