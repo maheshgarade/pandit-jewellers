@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { EMPTY_ESTIMATE, EstimateState, MakingType, useStore } from "@/lib/store";
-import { buildEstimate, drawEstimate, EstimateItem, money, rupees } from "@/lib/receipt";
+import { buildEstimate, drawEstimate, EstimateItem, money, rupees, wt } from "@/lib/receipt";
 import { recordEstimate } from "@/lib/customers";
 import { adjustToTotal, clearAdjust, computeItem, isAdjusted, ItemInput } from "@/lib/items";
 import { useLanguage } from "@/context/LanguageContext";
@@ -52,7 +52,7 @@ export const EstimatePanel: React.FC = () => {
           <span className="flex min-w-0 items-center gap-1.5 text-xs text-gray-600">
             {it.code ? <span className="shrink-0 rounded border border-gray-400 px-1 text-[11px] font-semibold text-gray-800">{it.code}</span> : null}
             <span className="truncate">
-            {[`${t("estimate.net")} ${it.net.toFixed(3)} g`, it.fine !== undefined ? `${t("estimate.fine")} ${it.fine.toFixed(3)} g` : "", it.purity ?? "", deducted ? t("estimate.deducted") : ""].filter(Boolean).join(" · ")}
+            {[`${t("estimate.net")} ${wt(it.net)} g`, it.fine !== undefined ? `${t("estimate.fine")} ${wt(it.fine)} g` : "", it.purity ?? "", deducted ? t("estimate.deducted") : ""].filter(Boolean).join(" · ")}
             </span>
           </span>
         </div>
@@ -232,9 +232,9 @@ const ItemEditor: React.FC<{ item: EstimateItem; onClose: () => void; onSave: (i
   const [f, setF] = useState({
     name: item.name,
     code: item.code ?? "",
-    gross: s3(inp?.gross),
-    less: s3(inp?.less),
-    net: s3(item.net),
+    gross: inp?.gross === undefined ? "" : wt(inp.gross),
+    less: inp?.less === undefined ? "" : wt(inp.less),
+    net: wt(item.net),
     rate: inp ? String(Math.round(inp.rate * unit * 100) / 100) : "",
     mkType: (inp?.mkType ?? "percentage") as MakingType,
     mkValue: s3(inp?.mkValue),
@@ -245,7 +245,7 @@ const ItemEditor: React.FC<{ item: EstimateItem; onClose: () => void; onSave: (i
     setF((o) => {
       const next = { ...o, [k]: v };
       // Net follows Gross − Less while those are edited; it can still be typed.
-      if ((k === "gross" || k === "less") && next.gross !== "") next.net = Math.max(0, n(next.gross) - n(next.less)).toFixed(3);
+      if ((k === "gross" || k === "less") && next.gross !== "") next.net = wt(Math.max(0, n(next.gross) - n(next.less)));
       return next;
     });
   const hasGross = inp?.gross !== undefined;

@@ -63,7 +63,11 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 const sum = (list: EstimateItem[]) => r2(list.reduce((a, it) => a + it.total, 0));
 
 export const money = (n: number) => n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-export const wt = (n: number) => n.toFixed(3);
+/** A weight: 3 decimals when it has a fraction (8.12 → "8.120"), none when whole (10 → "10"). Used everywhere. */
+export const wt = (n: number) => {
+  const s = n.toFixed(3);
+  return s.endsWith(".000") ? s.slice(0, -4) : s;
+};
 export const rupees = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 /** e.g. "22/11/2026 11:42 AM" */
 export const estimateDate = () =>

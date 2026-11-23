@@ -3,7 +3,7 @@ import { ArrowRight, Plus, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { EMPTY_ESTIMATE, EstimateState, formatINR, MakingType, makingText, Metal, Mode, rateKey, timeText, useStore } from "@/lib/store";
-import { money, type EstimateItem } from "@/lib/receipt";
+import { money, wt, type EstimateItem } from "@/lib/receipt";
 import { recordEstimate } from "@/lib/customers";
 import { computeItem } from "@/lib/items";
 import { ProductPicker } from "./ProductPicker";
@@ -19,7 +19,7 @@ type ListKey = "items" | "old";
 /** The Calculator tab's single result. */
 type CalcResult = { it: EstimateItem; key: ListKey; name: string; making: string; rateText: string };
 type Row = { label: string; value: string };
-const grams = (n: number) => `${n.toFixed(3)} g`;
+const grams = (n: number) => `${wt(n)} g`;
 const rupees = (n: number) => `₹ ${formatINR(n)}`;
 
 /**
@@ -74,7 +74,7 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
   // Net is always its own field: filled in as Gross − Less while those are typed, and can still be edited.
   const net = num(netIn);
   const hasWeight = netIn !== "";
-  const fillNet = (g: string, l: string) => setNetIn(g === "" ? "" : Math.max(0, num(g) - (leftOn ? num(l) : 0)).toFixed(3));
+  const fillNet = (g: string, l: string) => setNetIn(g === "" ? "" : wt(Math.max(0, num(g) - (leftOn ? num(l) : 0))));
   const typeGross = (v: string) => {
     setGross(v);
     fillNet(v, less);
