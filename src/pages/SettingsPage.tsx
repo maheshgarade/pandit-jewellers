@@ -134,6 +134,7 @@ export default function SettingsPage() {
     f["gold-sell"].grossLess && t("settings.sumGoldSellGross"),
     f["gold-buy"].grossLess && t("settings.sumGoldBuyGross"),
     f["gold-buy"].purity && t("calc.purity"),
+    f["gold-buy"].equivalent && t("settings.equivalent"),
     f["silver-sell"].gross && t("settings.sumSilverGross"),
     state.details.itemName && t("calc.itemName"),
     state.details.productCode && t("calc.productCode"),
@@ -261,6 +262,7 @@ export default function SettingsPage() {
           <Sub>{`${t("calculators.gold")} · ${t("calc.buy")}`}</Sub>
           <Switch on={f["gold-buy"].grossLess} onToggle={() => setField("gold-buy", "grossLess")} label={t("settings.grossLess")} hint={t("settings.grossLessHint")} />
           <Switch on={f["gold-buy"].purity} onToggle={() => setField("gold-buy", "purity")} label={t("calc.purity")} hint={t("settings.purityHint")} />
+          <Switch on={f["gold-buy"].equivalent} onToggle={() => setField("gold-buy", "equivalent")} label={t("settings.equivalent")} hint={t("settings.equivalentHint")} />
           <Sub>{`${t("calculators.silver")} · ${t("calc.sell")}`}</Sub>
           <Switch on={f["silver-sell"].gross} onToggle={() => setField("silver-sell", "gross")} label={t("calc.grossWeight")} hint={t("settings.grossPacketHint")} />
           <Switch on={f["silver-sell"].packet} onToggle={() => setField("silver-sell", "packet")} label={t("calc.packetWeight")} hint={t("settings.packetHint")} />

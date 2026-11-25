@@ -287,6 +287,8 @@
     "grossLess": "Gross & Less Weight",
     "grossLessHint": "Net = Gross − Less",
     "purityHint": "Fine gold = Net × Purity %",
+    "equivalent": "Equivalent in 99.50 / 99.9",
+    "equivalentHint": "Show the fine gold as 99.50 and 99.9 weights",
     "grossPacketHint": "Net = Gross − Packet",
     "packetHint": "Used with Gross Weight",
     "calcTab": "Calculator tab",

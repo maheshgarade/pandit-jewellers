@@ -32,7 +32,7 @@ export interface ShopDetails {
 }
 export interface FieldSettings {
   "gold-sell": { grossLess: boolean };
-  "gold-buy": { grossLess: boolean; purity: boolean };
+  "gold-buy": { grossLess: boolean; purity: boolean; /** "Equivalent in 99.50 / 99.9" lines in the result. */ equivalent: boolean };
   "silver-sell": { gross: boolean; packet: boolean };
 }
 /** Optional item fields on the Calculator, switched on in Settings. The Estimate tab always has them. */
@@ -135,7 +135,7 @@ const DEFAULT_STATE: AppState = {
   making: { gold: { type: "percentage", value: null }, silver: { type: "percentage", value: null } },
   fields: {
     "gold-sell": { grossLess: false },
-    "gold-buy": { grossLess: false, purity: true },
+    "gold-buy": { grossLess: false, purity: true, equivalent: false },
     "silver-sell": { gross: false, packet: false },
   },
   details: { itemName: false, productCode: false },

@@ -218,8 +218,12 @@ export const MetalCalculator: React.FC<{ metal: Metal; target?: "calculator" | "
           ? [
               ...(it.purity ? [{ label: t("calc.purity"), value: it.purity }] : []),
               { label: t("calc.fineGold"), value: grams(it.fine) },
-              { label: t("calc.eq995"), value: grams(it.eq995 ?? it.fine / 0.995) },
-              { label: t("calc.eq999"), value: grams(it.eq999 ?? it.fine / 0.999) },
+              ...(state.fields["gold-buy"].equivalent
+                ? [
+                    { label: t("calc.eq995"), value: grams(it.eq995 ?? it.fine / 0.995) },
+                    { label: t("calc.eq999"), value: grams(it.eq999 ?? it.fine / 0.999) },
+                  ]
+                : []),
             ]
           : []),
         { label: rateLabel, value: r.rateText },
