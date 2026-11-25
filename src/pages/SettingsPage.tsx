@@ -156,6 +156,7 @@ export default function SettingsPage() {
             </label>
             <input id="profile-name" autoComplete="name" value={state.salesman} placeholder={t("settings.yourNamePh")} onChange={(e) => update((s) => ({ ...s, salesman: e.target.value }))} className={inputCls} />
           </div>
+          <Switch on={state.quickActions} onToggle={() => update((s) => ({ ...s, quickActions: !s.quickActions }))} label={t("fab.setting")} hint={t("fab.settingHint")} />
         </Section>
 
         <Section id="printer" icon={PrinterIcon} title={t("settings.printer")} summary={`${state.printer?.name ?? t("settings.noPrinter")} · ${paper}`} open={open === "printer"} onToggle={() => toggle("printer")}>

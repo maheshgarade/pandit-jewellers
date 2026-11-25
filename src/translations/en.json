@@ -25,6 +25,8 @@
   },
   "fab": {
     "open": "Quick actions",
+    "setting": "Quick actions button (+)",
+    "settingHint": "Floating + button. Tap to open, press and drag to move it",
     "estimate": "Create estimate",
     "customer": "Create customer",
     "calculate": "Calculate"

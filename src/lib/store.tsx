@@ -105,6 +105,8 @@ export interface AppState {
   salesman: string;
   /** How often each product name was picked: the most used show first in product search. */
   productUse: Record<string, number>;
+  /** Show the floating + (quick actions) button on the main tabs. */
+  quickActions: boolean;
 }
 
 export const EMPTY_ESTIMATE: EstimateState = { items: [], old: [], customer: { name: "", number: "", address: "" }, no: null };
@@ -152,6 +154,7 @@ const DEFAULT_STATE: AppState = {
   products: DEFAULT_PRODUCTS,
   salesman: "",
   productUse: {},
+  quickActions: true,
 };
 
 const STORAGE_KEY = "pj-store-v1";

@@ -13,7 +13,7 @@ import { useLanguage } from "@/context/LanguageContext";
 const POS_KEY = "pj.fabPos";
 const SIZE = 56; // h-14 / w-14
 const MARGIN = 8;
-const DRAG_THRESHOLD = 8; // px of movement before a press counts as a drag, not a tap
+const DRAG_THRESHOLD = 10; // px of movement before a press counts as a drag, not a tap
 
 type Pos = { x: number; y: number }; // top-left of the button, in viewport px
 
@@ -45,43 +45,51 @@ export const QuickActions: React.FC = () => {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // Tap = the browser's own click (reliable anywhere on the button). Dragging uses pointer events and only
+  // takes over once the finger has moved past DRAG_THRESHOLD; the click that follows a drag is ignored.
+  const justDragged = useRef(false);
+
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     drag.current = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, sx: e.clientX, sy: e.clientY, moved: false };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    justDragged.current = false;
   };
   const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
-    if (!d.moved && Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < DRAG_THRESHOLD) return;
-    if (!d.moved) setOpen(false);
-    d.moved = true;
+    if (!d.moved) {
+      if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < DRAG_THRESHOLD) return;
+      d.moved = true;
+      setOpen(false);
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* pointer already released */
+      }
+    }
     setPos(clamp({ x: e.clientX - d.dx, y: e.clientY - d.dy }));
   };
-  const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const endDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
     const d = drag.current;
     drag.current = null;
-    if (!d || d.id !== e.pointerId) return;
-    if (d.moved) {
-      setPos((p) => {
-        try {
-          if (p) localStorage.setItem(POS_KEY, JSON.stringify(p));
-        } catch {
-          /* storage unavailable: position just won't be remembered */
-        }
-        return p;
-      });
-    } else {
-      setOpen((o) => !o);
-    }
+    if (!d || d.id !== e.pointerId || !d.moved) return;
+    justDragged.current = true;
+    setPos((p) => {
+      try {
+        if (p) localStorage.setItem(POS_KEY, JSON.stringify(p));
+      } catch {
+        /* storage unavailable: position just won't be remembered */
+      }
+      return p;
+    });
   };
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  const onClick = () => {
+    if (justDragged.current) {
+      justDragged.current = false;
+      return;
+    }
+    setOpen((o) => !o);
+  };
 
   const go = (fn: () => void) => {
     setOpen(false);
@@ -116,9 +124,9 @@ export const QuickActions: React.FC = () => {
           aria-controls="quick-actions"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={() => (drag.current = null)}
-          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setOpen((o) => !o))}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onClick={onClick}
           onContextMenu={(e) => e.preventDefault()}
           className="flex h-14 w-14 touch-none select-none items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-pink-500 text-white shadow-xl active:scale-95"
         >
