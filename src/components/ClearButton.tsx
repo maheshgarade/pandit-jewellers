@@ -2,96 +2,129 @@ import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
-const SIZE = 32; // the round × button
+const SIZE = 28; // the round × button
 const GAP = 6;
 const TYPES = new Set(["text", "number", "tel", "search", "email", "url", "password", ""]);
 
-const editable = (el: Element | null): el is HTMLInputElement | HTMLTextAreaElement => {
-  if (el instanceof HTMLTextAreaElement) return !el.readOnly && !el.disabled;
+type Box = HTMLInputElement | HTMLTextAreaElement;
+
+const editable = (el: Element): el is Box => {
+  if (el instanceof HTMLTextAreaElement) return !el.readOnly && !el.disabled && !el.dataset.noClear;
   return el instanceof HTMLInputElement && TYPES.has(el.type) && !el.readOnly && !el.disabled && !el.dataset.noClear;
 };
 
 /** Clear a React-controlled field: set it through the native setter, then fire "input" so React's onChange runs. */
-const clearField = (el: HTMLInputElement | HTMLTextAreaElement) => {
+const clearField = (el: Box) => {
   const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
   Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(el, "");
   el.dispatchEvent(new Event("input", { bubbles: true }));
 };
 
+/** Original inline padding-right of each box we widened, to put back when it empties. */
+const origPad = new WeakMap<Box, string>();
+
 /**
- * One × button for every text / number box in the app: shown inside the end of the focused box while it has a
- * value; one tap empties it and keeps the keyboard open. Mounted once (App). A box can opt out with data-no-clear.
+ * One × for every text / number box in the app that has a value, whether or not it is focused: tap × to empty
+ * the box, tap anywhere else in the box to edit as usual. Mounted once (App). A box opts out with data-no-clear.
+ * A × is hidden when something covers its box (a dialog, the sticky header, the quick-actions backdrop).
  */
 export const ClearButton: React.FC = () => {
   const { t } = useLanguage();
-  const [box, setBox] = useState<{ top: number; left: number } | null>(null);
-  const target = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
-  const padded = useRef<{ el: HTMLElement; pr: string } | null>(null);
+  const [spots, setSpots] = useState<{ el: Box; top: number; left: number }[]>([]);
+  const layer = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const unpad = () => {
-      if (padded.current) padded.current.el.style.paddingRight = padded.current.pr;
-      padded.current = null;
-    };
-    const place = () => {
-      const el = target.current;
-      if (!el || document.activeElement !== el || !el.value) {
-        unpad();
-        setBox(null);
-        return;
+    let frame = 0;
+    const tracked = new Set<Box>();
+
+    const unpad = (el: Box) => {
+      if (origPad.has(el)) {
+        el.style.paddingRight = origPad.get(el)!;
+        origPad.delete(el);
       }
-      if (!padded.current || padded.current.el !== el) {
-        unpad();
-        padded.current = { el, pr: el.style.paddingRight };
-      }
-      // Sit just left of anything already inside the box's right end (e.g. the pencil button).
-      el.style.paddingRight = padded.current.pr;
-      const basePad = parseFloat(getComputedStyle(el).paddingRight) || 0;
-      const inner = basePad >= 32 ? basePad : 0;
-      el.style.paddingRight = `${inner + SIZE + GAP}px`;
-      const r = el.getBoundingClientRect();
-      const top = el instanceof HTMLTextAreaElement ? r.top + GAP : r.top + (r.height - SIZE) / 2;
-      setBox({ top, left: r.right - inner - SIZE - GAP });
+      tracked.delete(el);
     };
-    const onFocus = (e: FocusEvent) => {
-      target.current = editable(e.target as Element) ? (e.target as HTMLInputElement) : null;
-      place();
+
+    const measure = () => {
+      frame = 0;
+      // While measuring, our own buttons must not count as "covering" a box.
+      layer.current?.classList.add("pointer-events-none", "[&_*]:pointer-events-none");
+      const next: { el: Box; top: number; left: number }[] = [];
+      const seen = new Set<Box>();
+      const vh = window.innerHeight;
+      document.querySelectorAll<Box>("input, textarea").forEach((el) => {
+        if (!editable(el) || !el.value) return;
+        const r0 = el.getBoundingClientRect();
+        if (r0.width < 60 || r0.bottom < 0 || r0.top > vh) return;
+        seen.add(el);
+        if (!origPad.has(el)) origPad.set(el, el.style.paddingRight);
+        tracked.add(el);
+        // Sit just left of anything already in the box's right end (e.g. the pencil button).
+        el.style.paddingRight = origPad.get(el)!;
+        const basePad = parseFloat(getComputedStyle(el).paddingRight) || 0;
+        const inner = basePad >= 32 ? basePad : 0;
+        el.style.paddingRight = `${inner + SIZE + GAP}px`;
+        const r = el.getBoundingClientRect();
+        const top = el instanceof HTMLTextAreaElement ? r.top + GAP : r.top + (r.height - SIZE) / 2;
+        const left = r.right - inner - SIZE - GAP;
+        const hit = document.elementFromPoint(left + SIZE / 2, top + SIZE / 2);
+        if (hit && (hit === el || el.contains(hit))) next.push({ el, top, left });
+      });
+      tracked.forEach((el) => !seen.has(el) && unpad(el));
+      layer.current?.classList.remove("pointer-events-none", "[&_*]:pointer-events-none");
+      setSpots((prev) =>
+        prev.length === next.length && prev.every((p, i) => p.el === next[i].el && p.top === next[i].top && p.left === next[i].left) ? prev : next
+      );
     };
-    const onBlur = () => setTimeout(place, 0);
-    const onMove = () => target.current && place();
-    document.addEventListener("focusin", onFocus);
-    document.addEventListener("focusout", onBlur);
-    document.addEventListener("input", onMove, true);
-    window.addEventListener("scroll", onMove, true);
-    window.addEventListener("resize", onMove);
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+
+    const events: [EventTarget, string][] = [
+      [document, "input"],
+      [document, "focusin"],
+      [document, "focusout"],
+      [document, "click"],
+      [window, "scroll"],
+      [window, "resize"],
+    ];
+    events.forEach(([tg, ev]) => tg.addEventListener(ev, schedule, true));
+    const mo = new MutationObserver(schedule);
+    mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "value", "hidden", "open"] });
+    // Values set by code (Reset, Calculate, a saved rate) fire no event: re-check now and then.
+    const poll = window.setInterval(schedule, 400);
+    schedule();
     return () => {
-      document.removeEventListener("focusin", onFocus);
-      document.removeEventListener("focusout", onBlur);
-      document.removeEventListener("input", onMove, true);
-      window.removeEventListener("scroll", onMove, true);
-      window.removeEventListener("resize", onMove);
-      unpad();
+      events.forEach(([tg, ev]) => tg.removeEventListener(ev, schedule, true));
+      mo.disconnect();
+      clearInterval(poll);
+      if (frame) cancelAnimationFrame(frame);
+      tracked.forEach(unpad);
     };
   }, []);
 
-  if (!box) return null;
   return (
-    <button
-      type="button"
-      aria-label={t("common.clear")}
-      // pointerdown + preventDefault: the box keeps focus, so the keyboard stays up.
-      onPointerDown={(e) => {
-        e.preventDefault();
-        if (target.current) clearField(target.current);
-      }}
-      onClick={(e) => {
-        e.preventDefault();
-        if (target.current) clearField(target.current);
-      }}
-      style={{ top: box.top, left: box.left, width: SIZE, height: SIZE }}
-      className="fixed z-[60] flex items-center justify-center rounded-full bg-gray-200 text-gray-600 active:bg-gray-300"
-    >
-      <X className="h-4 w-4" aria-hidden="true" />
-    </button>
+    <div ref={layer}>
+      {spots.map(({ el, top, left }, i) => (
+        <button
+          key={el.id || i}
+          type="button"
+          aria-label={`${t("common.clear")}${el.labels?.[0]?.textContent ? `: ${el.labels[0].textContent}` : ""}`}
+          // pointerdown + preventDefault: a focused box keeps focus (keyboard stays up); an unfocused one stays closed.
+          onPointerDown={(e) => {
+            e.preventDefault();
+            clearField(el);
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            if (e.detail === 0) clearField(el); // keyboard Enter / Space
+          }}
+          style={{ top, left, width: SIZE, height: SIZE }}
+          className="fixed z-[60] flex items-center justify-center rounded-full bg-gray-200 text-gray-600 active:bg-gray-300"
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+        </button>
+      ))}
+    </div>
   );
 };
