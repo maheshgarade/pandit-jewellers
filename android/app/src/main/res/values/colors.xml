@@ -1,5 +1,5 @@
 <resources>
     <color name="splash_background">#FFFFFF</color>
     <!-- Matches the header (Tailwind purple-800) so the status bar blends into it -->
-    <color name="status_bar">#6B21A8</color>
+    <color name="status_bar">#6E11B0</color>
 </resources>

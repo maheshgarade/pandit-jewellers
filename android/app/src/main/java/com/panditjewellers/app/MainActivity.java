@@ -1,6 +1,8 @@
 package com.panditjewellers.app;
 
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 
@@ -21,7 +23,17 @@ public class MainActivity extends BridgeActivity {
         // Android 15+ forces edge-to-edge, so the WebView draws under the status bar,
         // camera cutout and navigation bar. Pad its container by those insets.
         View container = (View) getBridge().getWebView().getParent();
-        container.setBackgroundColor(Color.parseColor("#6B21A8")); // header purple behind the bars
+        // Same left-to-right gradient as the web header (Tailwind v4 purple-800 -> purple-900),
+        // so the status bar area and the header read as one band.
+        container.setBackground(new GradientDrawable(
+            GradientDrawable.Orientation.LEFT_RIGHT,
+            new int[] { Color.parseColor("#6E11B0"), Color.parseColor("#59168B") }
+        ));
+        // Android 10+ lays a translucent scrim over the bars for contrast; it made the status bar look lighter.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setStatusBarContrastEnforced(false);
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(container, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(
