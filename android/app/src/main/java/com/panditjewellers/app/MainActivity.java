@@ -27,7 +27,10 @@ public class MainActivity extends BridgeActivity {
             Insets insets = windowInsets.getInsets(
                 WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
             );
-            v.setPadding(insets.left, insets.top, insets.right, insets.bottom);
+            // When the keyboard is open, pad by its height instead so the WebView shrinks above it
+            // and the page can scroll the focused field into view.
+            Insets ime = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
+            v.setPadding(insets.left, insets.top, insets.right, Math.max(insets.bottom, ime.bottom));
             return WindowInsetsCompat.CONSUMED;
         });
 

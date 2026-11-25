@@ -17,6 +17,17 @@ import { StoreProvider } from "./lib/store.tsx";
 
 const queryClient = new QueryClient();
 
+// Keyboard: the app shrinks above it (MainActivity); then bring the field being typed in into view,
+// clear of the sticky header and the bottom tabs.
+const revealFocused = () => {
+  const el = document.activeElement;
+  if (el instanceof HTMLElement && el.matches("input, textarea, select, [contenteditable]")) {
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+};
+document.addEventListener("focusin", () => setTimeout(revealFocused, 300));
+window.addEventListener("resize", () => setTimeout(revealFocused, 50));
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <StyledEngineProvider injectFirst>

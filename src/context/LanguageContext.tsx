@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, { createContext, useState, useEffect, useContext, ReactNode } from "react";
 import enTranslations from "../translations/en.json";
 import mrTranslations from "../translations/mr.json";
 
@@ -63,6 +63,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   };
 
   current = language;
+  useEffect(() => {
+    document.documentElement.lang = language; // correct Devanagari shaping and screen-reader voice
+  }, [language]);
   const t = (key: string, vars?: Record<string, string | number>): string => tr(key, vars);
 
   return <LanguageContext.Provider value={{ language, setLanguage, t }}>{children}</LanguageContext.Provider>;
